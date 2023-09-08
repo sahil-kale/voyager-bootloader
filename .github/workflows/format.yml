@@ -1,0 +1,13 @@
+name: Code Format check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt install clang-format
+      - run: bash scripts/test_clang_format.sh

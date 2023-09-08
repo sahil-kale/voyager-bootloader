@@ -70,7 +70,7 @@ voyager_bootloader_process_receieved_packet(uint8_t const *const data,
  */
 voyager_bootloader_state_E voyager_bootloader_get_state(void);
 
-/** NVM Functions **/
+/** User Implemented Functions **/
 
 /**
  * @brief voyager_bootloader_nvm_write Writes a value to a given key in NVM
@@ -97,5 +97,49 @@ voyager_bootloader_nvm_write(voyager_nvm_key_E key,
 voyager_error_E
 voyager_bootloader_nvm_read(voyager_nvm_key_E key,
                             voyager_bootloader_nvm_data_t *const data);
+
+/**
+ * @brief voyager_bootloader_hal_erase_flash Erases the flash memory of the MCU
+ * @param start_address The start address of the flash memory to erase
+ * @param end_address The end address of the flash memory to erase
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ *
+ * @note This function is called by the bootloader and is required to be
+ * implemented by the application
+ */
+voyager_error_E
+voyager_bootloader_hal_erase_flash(voyager_bootloader_nvm_data_t start_address,
+                                   voyager_bootloader_nvm_data_t end_address);
+
+/**
+ * @brief voyager_bootloader_hal_write_flash Writes data to the flash memory of
+ * the MCU
+ * @param address The address of the flash memory to write to
+ * @param data The data to write to the flash memory
+ * @param length The length of the data to write to the flash memory
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ *
+ * @note This function is called by the bootloader and is required to be
+ * implemented by the application
+ */
+voyager_error_E
+voyager_bootloader_hal_write_flash(voyager_bootloader_nvm_data_t address,
+                                   uint8_t const *const data,
+                                   size_t const length);
+
+/**
+ * @brief voyager_bootloader_hal_read_flash Reads data from the flash memory of
+ * the MCU
+ * @param address The address of the flash memory to read from
+ * @param data The data to read from the flash memory
+ * @param length The length of the data to read from the flash memory
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ *
+ * @note This function is called by the bootloader and is required to be
+ * implemented by the application
+ */
+voyager_error_E
+voyager_bootloader_hal_read_flash(voyager_bootloader_nvm_data_t address,
+                                  uint8_t *const data, size_t const length);
 
 #endif // VOYAGER_H

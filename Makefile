@@ -13,8 +13,8 @@ CPPUTEST_HOME = /usr
 # Compiler and flags
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -g -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include
-CXXFLAGS = -Wall -g -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include
+CFLAGS = -Wall -g -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -DUNIT_TEST
+CXXFLAGS = -Wall -g -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -DUNIT_TEST
 LDFLAGS = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 # Source files

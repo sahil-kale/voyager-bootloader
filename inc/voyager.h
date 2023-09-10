@@ -9,7 +9,10 @@ typedef enum {
 } voyager_error_E;
 
 typedef enum {
-  VOYAGER_STATE_IDLE = 0,
+  VOYAGER_STATE_NOT_INITIALIZED =
+      0, // This state is only entered on startup and cleared once the
+         // bootloader is initialized
+  VOYAGER_STATE_IDLE,
   VOYAGER_STATE_DFU_RECEIVE,
   VOYAGER_STATE_FLASH_VERIFY,
 } voyager_bootloader_state_E;
@@ -25,6 +28,14 @@ typedef enum {
   VOYAGER_NVM_KEY_APP_SIZE,
   VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING,
 } voyager_nvm_key_E;
+
+typedef enum {
+  VOYAGER_REQUEST_KEEP_IDLE =
+      0, // Default request, keeping the request at none will prevent the
+         // bootloader from doing anything
+  VOYAGER_REQUEST_ENTER_DFU,
+  VOYAGER_REQUEST_JUMP_TO_APP,
+} voyager_bootloader_request_E;
 
 // Define a custom typedef for a voyager_bootloader_nvm_data member to be a
 // uint32_t
@@ -69,6 +80,15 @@ voyager_bootloader_process_receieved_packet(uint8_t const *const data,
  * @return The current state of the bootloader
  */
 voyager_bootloader_state_E voyager_bootloader_get_state(void);
+
+/**
+ * @brief voyager_bootloader_external_request Processes an external request to
+ * enter DFU mode or jump to the application
+ * @param request The request to process
+ * @return VOYAGER_ERROR_NONE if successfully received, otherwise an error code
+ */
+voyager_error_E
+voyager_bootloader_request(const voyager_bootloader_request_E request);
 
 /** User Implemented Functions **/
 

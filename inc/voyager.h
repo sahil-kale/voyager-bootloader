@@ -6,6 +6,7 @@
 typedef enum {
   VOYAGER_ERROR_NONE = 0,
   VOYAGER_ERROR_INVALID_ARGUMENT,
+  VOYAGER_ERROR_NOT_IMPLEMENTED,
 } voyager_error_E;
 
 typedef enum {
@@ -14,7 +15,7 @@ typedef enum {
          // bootloader is initialized
   VOYAGER_STATE_IDLE,
   VOYAGER_STATE_DFU_RECEIVE,
-  VOYAGER_STATE_FLASH_VERIFY,
+  VOYAGER_STATE_JUMP_TO_APP,
 } voyager_bootloader_state_E;
 
 // Note: if A/B partitioning is used later on, these keys will require separate
@@ -22,9 +23,11 @@ typedef enum {
 // specify the partition number and this partition number is required to be
 // passed in to the bootloader
 typedef enum {
-  VOYAGER_NVM_KEY_CRC = 0,
+  VOYAGER_NVM_KEY_APP_CRC = 0,
   VOYAGER_NVM_KEY_APP_START_ADDRESS,
-  VOYAGER_NVM_KEY_APP_END_ADDRESS,
+  VOYAGER_NVM_KEY_APP_END_ADDRESS, // Used to ensure the app size does not
+                                   // exceed the max bound
+  VOYAGER_NVM_KEY_APP_RESET_VECTOR_ADDRESS,
   VOYAGER_NVM_KEY_APP_SIZE,
   VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING,
 } voyager_nvm_key_E;
@@ -38,8 +41,8 @@ typedef enum {
 } voyager_bootloader_request_E;
 
 // Define a custom typedef for a voyager_bootloader_nvm_data member to be a
-// uint32_t
-typedef uint32_t voyager_bootloader_nvm_data_t;
+// uint64_t
+typedef uint64_t voyager_bootloader_nvm_data_t;
 
 /** Primary Bootloader Functions **/
 /**
@@ -93,6 +96,16 @@ voyager_bootloader_request(const voyager_bootloader_request_E request);
 /** User Implemented Functions **/
 
 /**
+ * @brief voyager_bootloader_send_to_host Writes a desired packet to the DFU
+ * host
+ * @param data The data to write to the DFU host
+ * @param len The length of the data to write to the DFU host
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ */
+voyager_error_E voyager_bootloader_send_to_host(uint8_t const *const data,
+                                                size_t len);
+
+/**
  * @brief voyager_bootloader_nvm_write Writes a value to a given key in NVM
  * @param key The key to write to
  * @param data The data to write to the key
@@ -102,7 +115,7 @@ voyager_bootloader_request(const voyager_bootloader_request_E request);
  * implemented by the application.
  */
 voyager_error_E
-voyager_bootloader_nvm_write(voyager_nvm_key_E key,
+voyager_bootloader_nvm_write(const voyager_nvm_key_E key,
                              voyager_bootloader_nvm_data_t const *const data);
 
 /**
@@ -115,7 +128,7 @@ voyager_bootloader_nvm_write(voyager_nvm_key_E key,
  * implemented by the application.
  */
 voyager_error_E
-voyager_bootloader_nvm_read(voyager_nvm_key_E key,
+voyager_bootloader_nvm_read(const voyager_nvm_key_E key,
                             voyager_bootloader_nvm_data_t *const data);
 
 /**
@@ -127,9 +140,9 @@ voyager_bootloader_nvm_read(voyager_nvm_key_E key,
  * @note This function is called by the bootloader and is required to be
  * implemented by the application
  */
-voyager_error_E
-voyager_bootloader_hal_erase_flash(voyager_bootloader_nvm_data_t start_address,
-                                   voyager_bootloader_nvm_data_t end_address);
+voyager_error_E voyager_bootloader_hal_erase_flash(
+    const voyager_bootloader_nvm_data_t start_address,
+    const voyager_bootloader_nvm_data_t end_address);
 
 /**
  * @brief voyager_bootloader_hal_write_flash Writes data to the flash memory of
@@ -143,7 +156,7 @@ voyager_bootloader_hal_erase_flash(voyager_bootloader_nvm_data_t start_address,
  * implemented by the application
  */
 voyager_error_E
-voyager_bootloader_hal_write_flash(voyager_bootloader_nvm_data_t address,
+voyager_bootloader_hal_write_flash(const voyager_bootloader_nvm_data_t address,
                                    uint8_t const *const data,
                                    size_t const length);
 

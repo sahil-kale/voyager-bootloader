@@ -1,5 +1,6 @@
 #ifndef VOYAGER_H
 #define VOYAGER_H
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -40,9 +41,19 @@ typedef enum {
   VOYAGER_REQUEST_JUMP_TO_APP,
 } voyager_bootloader_request_E;
 
-// Define a custom typedef for a voyager_bootloader_nvm_data member to be a
-// uint64_t
-typedef uint64_t voyager_bootloader_nvm_data_t;
+typedef uintptr_t voyager_bootloader_addr_size_t;
+typedef uint32_t voyager_bootloader_app_crc_t;
+typedef uint32_t voyager_bootloader_app_size_t;
+typedef bool voyager_bootloader_verify_flash_before_jumping_t;
+
+typedef union {
+  voyager_bootloader_app_crc_t app_crc;
+  voyager_bootloader_addr_size_t app_start_address;
+  voyager_bootloader_addr_size_t app_end_address;
+  voyager_bootloader_addr_size_t app_reset_vector_address;
+  voyager_bootloader_app_size_t app_size;
+  voyager_bootloader_verify_flash_before_jumping_t verify_flash_before_jumping;
+} voyager_bootloader_nvm_data_t;
 
 /** Primary Bootloader Functions **/
 /**
@@ -102,7 +113,7 @@ voyager_bootloader_request(const voyager_bootloader_request_E request);
  * @param len The length of the data to write to the DFU host
  * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
  */
-voyager_error_E voyager_bootloader_send_to_host(uint8_t const *const data,
+voyager_error_E voyager_bootloader_send_to_host(void const *const data,
                                                 size_t len);
 
 /**
@@ -157,8 +168,7 @@ voyager_error_E voyager_bootloader_hal_erase_flash(
  */
 voyager_error_E
 voyager_bootloader_hal_write_flash(const voyager_bootloader_nvm_data_t address,
-                                   uint8_t const *const data,
-                                   size_t const length);
+                                   void const *const data, size_t const length);
 
 /**
  * @brief voyager_bootloader_hal_read_flash Reads data from the flash memory of
@@ -173,6 +183,6 @@ voyager_bootloader_hal_write_flash(const voyager_bootloader_nvm_data_t address,
  */
 voyager_error_E
 voyager_bootloader_hal_read_flash(voyager_bootloader_nvm_data_t address,
-                                  uint8_t *const data, size_t const length);
+                                  void *const data, size_t const length);
 
 #endif // VOYAGER_H

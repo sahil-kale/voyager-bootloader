@@ -110,44 +110,50 @@ voyager_prviate_run_state(const voyager_bootloader_state_E state) {
     case VOYAGER_STATE_JUMP_TO_APP: {
       // Get the NVM key for whether we should verify the flash before jumping
       // to the app
-      voyager_bootloader_nvm_data_t verify_flash_before_jumping;
+      voyager_bootloader_nvm_data_t data;
       ret = voyager_bootloader_nvm_read(
-          VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING,
-          &verify_flash_before_jumping);
+          VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING, &data);
 
       if (ret != VOYAGER_ERROR_NONE) {
         break;
       }
       // If we should verify the flash before jumping to the app, we do so
-      if (verify_flash_before_jumping) {
+      if (data.verify_flash_before_jumping) {
         // Get the NVM key for the app CRC
-        voyager_bootloader_nvm_data_t app_crc;
-        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_CRC, &app_crc);
+        voyager_bootloader_app_crc_t app_crc;
+        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_CRC, &data);
 
         if (ret != VOYAGER_ERROR_NONE) {
           break;
         }
+        app_crc = data.app_crc;
 
         // Get the NVM key for the app start address
-        voyager_bootloader_nvm_data_t app_start_address;
+
+        voyager_bootloader_addr_size_t app_start_address;
         ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS,
-                                          &app_start_address);
+                                          &data);
 
         if (ret != VOYAGER_ERROR_NONE) {
           break;
         }
+
+        app_start_address = data.app_start_address;
 
         // Get the NVM key for the app size
-        voyager_bootloader_nvm_data_t app_size;
-        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_SIZE, &app_size);
+        voyager_bootloader_app_size_t app_size;
+        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_SIZE, &data);
 
         if (ret != VOYAGER_ERROR_NONE) {
           break;
         }
 
+        app_size = data.app_size;
+
         // Calculate the CRC of the application
-        const uint32_t calculated_crc = voyager_private_calculate_crc(
-            (uint8_t *)app_start_address, app_size);
+        const voyager_bootloader_app_crc_t calculated_crc =
+            voyager_private_calculate_crc((uint8_t *)app_start_address,
+                                          app_size);
 
         // Compare the calculated CRC to the stored CRC
         if (calculated_crc != app_crc) {
@@ -213,7 +219,8 @@ voyager_bootloader_state_E voyager_private_get_desired_state(void) {
   return desired_state;
 }
 
-uint32_t voyager_private_calculate_crc(uint8_t *buffer, const size_t app_size) {
+voyager_bootloader_app_crc_t
+voyager_private_calculate_crc(void *buffer, const size_t app_size) {
   size_t size = app_size;
 
   // CRC table is the same CRC table used by GNU libiberty
@@ -264,7 +271,7 @@ uint32_t voyager_private_calculate_crc(uint8_t *buffer, const size_t app_size) {
 
   uint8_t *buf = buffer;
 
-  uint32_t calculated_crc = 0xffffffff;
+  voyager_bootloader_app_crc_t calculated_crc = 0xffffffff;
   while (size--) {
     calculated_crc = (calculated_crc << 8) ^
                      crc32_table[((calculated_crc >> 24) ^ *buf) & 255];

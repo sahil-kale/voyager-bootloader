@@ -50,7 +50,8 @@ typedef enum {
  * @param app_size The size of the application
  * @return The CRC of the application as a uint32_t
  */
-uint32_t voyager_private_calculate_crc(uint8_t *buffer, const size_t app_size);
+voyager_bootloader_app_crc_t
+voyager_private_calculate_crc(void *buffer, const size_t app_size);
 
 /**
  * @brief voyager_private_get_desired_state Gets the desired state of the

@@ -7,6 +7,7 @@ SRC_DIR = $(PROJECT_DIR)src
 INC_DIR = $(PROJECT_DIR)inc
 TEST_DIR = $(PROJECT_DIR)test
 MOCK_DIR = $(TEST_DIR)/mocks
+HOST_UTILS_DIR = $(PROJECT_DIR)utils/host
 BUILD_DIR = $(PROJECT_DIR)build
 
 CPPUTEST_HOME = /usr
@@ -14,8 +15,8 @@ CPPUTEST_HOME = /usr
 # Compiler and flags
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -g -pedantic -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -I$(MOCK_DIR) -DUNIT_TEST
-CXXFLAGS = -Wall -g -pedantic -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -I$(MOCK_DIR) -DUNIT_TEST
+CFLAGS = -Wall -g -pedantic -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -I$(MOCK_DIR) -DUNIT_TEST -I$(HOST_UTILS_DIR)
+CXXFLAGS = -Wall -g -pedantic -Werror -I$(INC_DIR) -I$(CPPUTEST_HOME)/include -I$(MOCK_DIR) -DUNIT_TEST -I$(HOST_UTILS_DIR)
 LDFLAGS = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 # Source files

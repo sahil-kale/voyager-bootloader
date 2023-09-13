@@ -16,10 +16,20 @@
 #endif // VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE < 8
 #endif // VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE
 
+#define VOYAGER_DFU_ACK_MESSAGE_SIZE 8U
+
 typedef struct {
   voyager_bootloader_state_E state;
   voyager_bootloader_request_E request;
   bool app_failed_crc_check;
+  bool valid_start_request_received;
+
+  uint8_t message_buffer[VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE];
+  uint8_t packet_size;
+  bool pending_data; // note: this flag acts as a de-facto mutex
+  bool packet_overrun;
+
+  uint8_t ack_message_buffer[VOYAGER_DFU_ACK_MESSAGE_SIZE];
 } voyager_data_t;
 
 typedef struct {
@@ -28,9 +38,14 @@ typedef struct {
 
 typedef struct {
   voyager_message_header_t header;
-  uint32_t app_size; // NOTE even though within the struct this data member is 4
-                     // bytes, only 3 are transmitted over the data link layer!
-  uint32_t app_crc;
+  union {
+    struct {
+      uint32_t app_size; // NOTE: only 3 bytes wide!
+      uint32_t app_crc;
+    } start_packet_data;
+
+    // other packets
+  };
 } voyager_message_t;
 
 typedef union {
@@ -39,7 +54,8 @@ typedef union {
 } reset_vector_U;
 
 typedef enum {
-  VOYAGER_MESSAGE_ID_START = 0,
+  VOYAGER_MESSAGE_ID_UNKNOWN = 0,
+  VOYAGER_MESSAGE_ID_START,
   VOYAGER_MESSAGE_ID_ACK,
   VOYAGER_MESSAGE_ID_DATA,
 } voyager_message_id_E;
@@ -86,7 +102,28 @@ voyager_private_enter_state(const voyager_bootloader_state_E current_state,
  * @return VOYAGER_ERROR_NONE if successful, overwise an error code
  */
 voyager_error_E
-voyager_prviate_run_state(const voyager_bootloader_state_E state);
+voyager_private_run_state(const voyager_bootloader_state_E state);
+
+/**
+ * @brief voyager_private_generate_ack_message Generates an ACK message
+ * @param error The error code to send in the ACK message
+ * @param metadata The metadata to send in the ACK message
+ * @param message_buffer The buffer to store the ACK message in
+ * @param message_size The size of the ACK message buffer
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ */
+voyager_error_E voyager_private_generate_ack_message(
+    const voyager_dfu_error_E error, uint8_t metadata[4],
+    uint8_t *const message_buffer, size_t const message_size);
+
+/**
+ * @brief voyager_private_unpack_message Unpacks a message
+ * @param message_buffer The buffer containing the message
+ * @param message_size The size of the message buffer
+ * @return The unpacked message
+ */
+voyager_message_t voyager_private_unpack_message(uint8_t *const message_buffer,
+                                                 size_t const message_size);
 
 #ifdef UNIT_TEST
 /**

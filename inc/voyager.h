@@ -11,6 +11,12 @@ typedef enum {
 } voyager_error_E;
 
 typedef enum {
+  VOYAGER_DFU_ERROR_NONE = 0,
+  VOYAGER_DFU_ERROR_PACKET_OVERRUN,
+  VOYAGER_DFU_ERROR_ENTER_DFU_NOT_REQUESTED,
+} voyager_dfu_error_E;
+
+typedef enum {
   VOYAGER_STATE_NOT_INITIALIZED =
       0, // This state is only entered on startup and cleared once the
          // bootloader is initialized
@@ -150,6 +156,9 @@ voyager_bootloader_nvm_read(const voyager_nvm_key_E key,
  *
  * @note This function is called by the bootloader and is required to be
  * implemented by the application
+ * @note The start and end addresses are provided for convinence, but the
+ * bootloader presently assumes only 1 partition and will be equal to the values
+ * returned by the NVM_read function.
  */
 voyager_error_E voyager_bootloader_hal_erase_flash(
     const voyager_bootloader_nvm_data_t start_address,

@@ -13,3 +13,12 @@ void mock_dfu_init(void) {
 }
 
 uint8_t *mock_dfu_get_flash(void) { return fake_flash; }
+
+voyager_error_E voyager_bootloader_send_to_host(void const *const data,
+                                                size_t len) {
+  mock_c()
+      ->actualCall("voyager_bootloader_send_to_host")
+      ->withMemoryBufferParameter("data", data, len);
+
+  return (voyager_error_E)mock_c()->returnValue().value.intValue;
+}

@@ -15,6 +15,7 @@ voyager_error_E voyager_bootloader_init(void) {
   voyager_data.pending_data = false;
   voyager_data.packet_overrun = false;
   voyager_data.valid_start_request_received = false;
+  voyager_data.dfu_sequence_number = 0;
   return VOYAGER_ERROR_NONE;
 }
 
@@ -91,15 +92,46 @@ voyager_error_E
 voyager_private_enter_state(const voyager_bootloader_state_E current_state,
                             const voyager_bootloader_state_E desired_state) {
   voyager_error_E ret = VOYAGER_ERROR_NONE;
-  switch (desired_state) {
-  case VOYAGER_STATE_DFU_RECEIVE:
-  case VOYAGER_STATE_JUMP_TO_APP:
-  case VOYAGER_STATE_NOT_INITIALIZED:
-  case VOYAGER_STATE_IDLE:
-  default:
-    // do nothing
-    break;
-  }
+  do {
+    switch (desired_state) {
+    case VOYAGER_STATE_DFU_RECEIVE: {
+      voyager_data.dfu_sequence_number = 0;
+      // get the start and end addresses from NVM
+      voyager_bootloader_nvm_data_t data;
+      ret =
+          voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
+
+      if (ret != VOYAGER_ERROR_NONE) {
+        break;
+      }
+
+      voyager_bootloader_addr_size_t start_address = data.app_start_address;
+
+      ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_END_ADDRESS, &data);
+
+      if (ret != VOYAGER_ERROR_NONE) {
+        break;
+      }
+
+      voyager_bootloader_addr_size_t end_address = data.app_end_address;
+
+      // Erase the flash
+      ret = voyager_bootloader_hal_erase_flash(start_address, end_address);
+
+      if (ret != VOYAGER_ERROR_NONE) {
+        break;
+      }
+
+    } break;
+    case VOYAGER_STATE_JUMP_TO_APP:
+    case VOYAGER_STATE_NOT_INITIALIZED:
+    case VOYAGER_STATE_IDLE:
+    default:
+      // do nothing
+      break;
+    }
+
+  } while (false);
 
   return ret;
 }
@@ -247,7 +279,71 @@ voyager_private_run_state(const voyager_bootloader_state_E state) {
     } break;
 
     case VOYAGER_STATE_DFU_RECEIVE: {
+      if (voyager_data.pending_data) {
+        // Unpack the message
+        voyager_message_t message = voyager_private_unpack_message(
+            voyager_data.message_buffer, voyager_data.packet_size);
 
+        // If the message is a data packet, we check if the sequence number is
+        // correct
+
+        if (voyager_data.dfu_sequence_number ==
+            message.data_packet_data.sequence_number) {
+          // Get the NVM key for the app start address
+          voyager_bootloader_nvm_data_t data;
+          ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS,
+                                            &data);
+
+          if (ret != VOYAGER_ERROR_NONE) {
+            break;
+          }
+
+          // If the sequence number is correct, we write the payload to flash
+          // and increment the sequence number
+          ret = voyager_bootloader_hal_write_flash(
+              data.app_start_address + voyager_data.bytes_written,
+              message.data_packet_data.payload,
+              message.data_packet_data.payload_size);
+          voyager_data.dfu_sequence_number =
+              (voyager_data.dfu_sequence_number + 1) % 256;
+          voyager_data.bytes_written += message.data_packet_data.payload_size;
+
+          if (ret != VOYAGER_ERROR_NONE) {
+            break;
+          }
+
+          // Generate the ack message, with the metadata consisting of the CRC
+          // of the sequence and payload
+          voyager_bootloader_app_crc_t crc = voyager_private_calculate_crc(
+              &voyager_data.message_buffer[1],
+              message.data_packet_data.payload_size + 1);
+
+          uint8_t metadata[4];
+          // copy the crc into the metadata in big endian
+          metadata[0] = (crc >> 24) & 0xFF;
+          metadata[1] = (crc >> 16) & 0xFF;
+          metadata[2] = (crc >> 8) & 0xFF;
+          metadata[3] = crc & 0xFF;
+
+          // Generate the ack message
+          ret = voyager_private_generate_ack_message(
+              VOYAGER_DFU_ERROR_NONE, metadata, voyager_data.ack_message_buffer,
+              sizeof(voyager_data.ack_message_buffer));
+
+        } else {
+          // TODO: Send an ACK with an error
+          // and also move us to the idle state
+        }
+
+        // Send the ACK
+        if (ret == VOYAGER_ERROR_NONE) {
+          ret = voyager_bootloader_send_to_host(
+              voyager_data.ack_message_buffer,
+              sizeof(voyager_data.ack_message_buffer));
+        }
+
+        voyager_data.pending_data = false;
+      }
     } break;
 
     case VOYAGER_STATE_NOT_INITIALIZED:
@@ -296,7 +392,7 @@ voyager_bootloader_state_E voyager_private_get_desired_state(void) {
 }
 
 voyager_bootloader_app_crc_t
-voyager_private_calculate_crc(void *buffer, const size_t app_size) {
+voyager_private_calculate_crc(const void *buffer, const size_t app_size) {
   size_t size = app_size;
 
   // CRC table is the same CRC table used by GNU libiberty
@@ -345,7 +441,7 @@ voyager_private_calculate_crc(void *buffer, const size_t app_size) {
       0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668,
       0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4};
 
-  uint8_t *buf = (uint8_t *)buffer;
+  const uint8_t *buf = (uint8_t *)buffer;
 
   voyager_bootloader_app_crc_t calculated_crc = 0xffffffff;
   while (size--) {
@@ -436,7 +532,9 @@ voyager_message_t voyager_private_unpack_message(uint8_t *const message_buffer,
                                          << 0; // LSB
   } break;
   case VOYAGER_MESSAGE_ID_DATA: {
-
+    message.data_packet_data.sequence_number = message_buffer[1];
+    message.data_packet_data.payload = &message_buffer[2];
+    message.data_packet_data.payload_size = message_size - 2;
   } break;
   case VOYAGER_MESSAGE_ID_ACK: {
     // We shouldn't be unpacking ACK messages... they are sent by device

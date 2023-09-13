@@ -46,7 +46,26 @@ bool voyager_host_message_generator_generate_start_request(
   return ret;
 }
 
-uint32_t voyager_host_calculate_crc(void *buffer, const size_t app_size) {
+bool voyager_host_message_generator_generate_data_packet(
+    uint8_t *const buffer, size_t len, const uint8_t *const payload,
+    size_t payload_len, bool reset_sequence_number) {
+  bool ret = false;
+  if ((buffer != NULL) && (len >= payload_len + 2U)) {
+    buffer[0] = VOYAGER_HOST_MESSAGE_ID_DATA;
+    // first byte is the sequence number
+    static uint8_t sequence_number = 0;
+    if (reset_sequence_number) {
+      sequence_number = 0;
+    }
+    buffer[1] = sequence_number;
+    sequence_number = (sequence_number + 1) % 256;
+    // copy the payload
+    memcpy(&buffer[2], payload, payload_len);
+  }
+  return ret;
+}
+
+uint32_t voyager_host_calculate_crc(const void *buffer, const size_t app_size) {
   size_t size = app_size;
 
   // CRC table is the same CRC table used by GNU libiberty
@@ -95,7 +114,7 @@ uint32_t voyager_host_calculate_crc(void *buffer, const size_t app_size) {
       0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668,
       0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4};
 
-  uint8_t *buf = (uint8_t *)buffer;
+  const uint8_t *buf = (uint8_t *)buffer;
 
   uint32_t calculated_crc = 0xffffffff;
   while (size--) {

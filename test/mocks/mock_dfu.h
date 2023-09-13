@@ -2,7 +2,7 @@
 #define MOCK_DFU_H
 #include <stdint.h>
 
-#define FAKE_FLASH_SIZE (128U)
+#define FAKE_FLASH_SIZE (129U)
 
 const uint8_t fake_flash_data_0[FAKE_FLASH_SIZE] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05,

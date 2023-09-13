@@ -99,7 +99,7 @@ TEST(test_dfu, start_request_with_enter_dfu_request) {
               voyager_bootloader_request(VOYAGER_REQUEST_ENTER_DFU));
 
   // Create a start request packet
-  uint8_t buffer[8];
+  uint8_t buffer[8] = {0};
   voyager_host_message_generator_generate_start_request(buffer, 8, 0XDEBEAD,
                                                         0xBEEFDEAD);
 
@@ -151,8 +151,19 @@ TEST(test_dfu, start_request_with_enter_dfu_request) {
   // Check that the desired state is DFU receive
   CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_private_get_desired_state());
 
+  // Expect the bootloader hal erase flash function to be called
+  // and return VOYAGER_ERROR_NONE
+  mock()
+      .expectOneCall("voyager_bootloader_hal_erase_flash")
+      .withParameter("start_address", mock_nvm_get_data()->app_start_address)
+      .withParameter("end_address", mock_nvm_get_data()->app_end_address)
+      .andReturnValue(VOYAGER_ERROR_NONE);
+
   // run the bootloader for one more iteration
   CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+  // Check the mock expectations
+  mock().checkExpectations();
 
   // check that the current state is DFU receive
   CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_bootloader_get_state());
@@ -225,14 +236,170 @@ TEST(test_dfu, start_request_overrun) {
   // Check that the packet overrun flag is set
   CHECK_EQUAL(true, voyager_private_get_data()->packet_overrun);
 
-  /*
-    // Generate a the ack packet to compare against
+  // Generate a the ack packet to compare against
   uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE];
-      voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN,
-                                           ack_packet,
-  VOYAGER_DFU_ACK_MESSAGE_SIZE);
-  */
+  voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN, NULL,
+                                       ack_packet,
+                                       VOYAGER_DFU_ACK_MESSAGE_SIZE);
 }
+
+// Test a full DFU transfer and jump to application
+TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
+  // Clear the mock
+  mock().clear();
+  // Ensure that the init function does not return an error
+  CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+  // get the mock nvm data and set the app size and crc to 0
+  mock_nvm_data_t *nvm_data = mock_nvm_get_data();
+  nvm_data->app_crc = 0;
+  nvm_data->app_size = 0;
+  // Ensure that the bootloader is off after init
+  CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
+
+  // Request to enter DFU mode
+  CHECK_EQUAL(VOYAGER_ERROR_NONE,
+              voyager_bootloader_request(VOYAGER_REQUEST_ENTER_DFU));
+
+  // Create a start request packet
+  uint8_t buffer[8] = {0};
+  voyager_bootloader_app_crc_t app_crc = voyager_private_calculate_crc(
+      (const void *)fake_flash_data_1, sizeof(fake_flash_data_1));
+  voyager_bootloader_app_size_t app_size = sizeof(fake_flash_data_1);
+  voyager_host_message_generator_generate_start_request(buffer, 8, app_size,
+                                                        app_crc);
+
+  // Process the packet
+  CHECK_EQUAL(VOYAGER_ERROR_NONE,
+              voyager_bootloader_process_receieved_packet(buffer, 8));
+
+  // Generate the comparison ack packet
+  uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
+  // compute the CRC of the last 7 bytes of the buffer sent by the host
+  // and pass it as the payload to the generate ack message function
+  uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
+  uint8_t crc_buffer[4] = {0};
+  crc_buffer[0] = (crc >> 24) & 0xFF;
+  crc_buffer[1] = (crc >> 16) & 0xFF;
+  crc_buffer[2] = (crc >> 8) & 0xFF;
+  crc_buffer[3] = crc & 0xFF;
+  voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer,
+                                       ack_packet,
+                                       VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
+  // Expect the bootloader send_to_host function to be called
+  mock()
+      .expectOneCall("voyager_bootloader_send_to_host")
+      .withMemoryBufferParameter("data", ack_packet,
+                                 VOYAGER_DFU_ACK_MESSAGE_SIZE)
+      .andReturnValue(VOYAGER_ERROR_NONE);
+
+  // run the bootloader for one more iteration
+  CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+  // Check the mock expectations
+  mock().checkExpectations();
+
+  // Check that the nvm app size and crc are set
+  CHECK_EQUAL(app_crc, mock_nvm_get_data()->app_crc);
+  CHECK_EQUAL(app_size, mock_nvm_get_data()->app_size);
+
+  // Check that the desired state is DFU receive
+  CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_private_get_desired_state());
+
+  // Expect the bootloader hal erase flash function to be called
+  // and return VOYAGER_ERROR_NONE
+  mock()
+      .expectOneCall("voyager_bootloader_hal_erase_flash")
+      .withParameter("start_address", mock_nvm_get_data()->app_start_address)
+      .withParameter("end_address", mock_nvm_get_data()->app_end_address)
+      .andReturnValue(VOYAGER_ERROR_NONE);
+
+  // run the bootloader for one more iteration
+  CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+  // Check the mock expectations
+  mock().checkExpectations();
+
+  // check that the current state is DFU receive
+  CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_bootloader_get_state());
+
+  // for half of the size, write using 2 byte packets, just for funsies
+  size_t written_size = 0U;
+  while (written_size != sizeof(fake_flash_data_1)) {
+    size_t chunk_size = 2U;
+    if (written_size > sizeof(fake_flash_data_1) / 2) {
+      chunk_size = 16U; // write the rest in 16 byte chunks
+    }
+
+    if (chunk_size > sizeof(fake_flash_data_1) - written_size) {
+      chunk_size = sizeof(fake_flash_data_1) - written_size;
+    }
+
+    // Create a data packet
+    voyager_host_message_generator_generate_data_packet(
+        buffer, chunk_size + 2U, &fake_flash_data_1[written_size], chunk_size,
+        (written_size == 0U));
+
+    // Process the packet
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_process_receieved_packet(
+                                        buffer, chunk_size + 2U));
+
+    // Generate the comparison ack packet, which will generate a CRC of all the
+    // bytes in the buffer except the first byte (the message ID)
+    uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
+    // compute the CRC of the last 7 bytes of the buffer sent by the host
+    // and pass it as the payload to the generate ack message function
+    uint32_t crc = voyager_host_calculate_crc(&buffer[1], chunk_size + 1U);
+    uint8_t crc_buffer[4] = {0};
+    crc_buffer[0] = (crc >> 24) & 0xFF;
+    crc_buffer[1] = (crc >> 16) & 0xFF;
+    crc_buffer[2] = (crc >> 8) & 0xFF;
+    crc_buffer[3] = crc & 0xFF;
+
+    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer,
+                                         ack_packet,
+                                         VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
+    // Expect the bootloader send_to_host function to be called
+    // and return VOYAGER_ERROR_NONE
+    mock()
+        .expectOneCall("voyager_bootloader_send_to_host")
+        .withMemoryBufferParameter("data", ack_packet,
+                                   VOYAGER_DFU_ACK_MESSAGE_SIZE)
+        .andReturnValue(VOYAGER_ERROR_NONE);
+
+    // Expect the bootloader hal write flash function to be called
+    // and return VOYAGER_ERROR_NONE
+    mock()
+        .expectOneCall("voyager_bootloader_hal_write_flash")
+        .withParameter("address",
+                       mock_nvm_get_data()->app_start_address + written_size)
+        .withMemoryBufferParameter("data", &fake_flash_data_1[written_size],
+                                   chunk_size)
+        .andReturnValue(VOYAGER_ERROR_NONE);
+
+    // run the bootloader for one more iteration
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    written_size += chunk_size;
+    // Assert that the written size is equal to the voyager data bytes written
+    CHECK_EQUAL(written_size, voyager_private_get_data()->bytes_written);
+
+    // Check the mock expectations
+    mock().checkExpectations();
+  }
+}
+
+// Test that an out of sequence packet generates an error packet and moves the
+// bootloader back to idle state
+
+// Test that a data packet without a start request is rejected and sends an
+// error
+
+// Test that a start request with size too big is rejected and sends an error
+
+// Test packet overrun in DFU receive state generates error packet and moves to
+// IDLE
 
 // Test the packet unpack function
 TEST(test_dfu, start_request_unpack) {

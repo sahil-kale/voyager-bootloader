@@ -30,6 +30,9 @@ typedef struct {
   bool packet_overrun;
 
   uint8_t ack_message_buffer[VOYAGER_DFU_ACK_MESSAGE_SIZE];
+
+  uint8_t dfu_sequence_number;
+  voyager_bootloader_app_size_t bytes_written;
 } voyager_data_t;
 
 typedef struct {
@@ -43,8 +46,11 @@ typedef struct {
       uint32_t app_size; // NOTE: only 3 bytes wide!
       uint32_t app_crc;
     } start_packet_data;
-
-    // other packets
+    struct {
+      uint8_t sequence_number;
+      uint8_t *payload;
+      size_t payload_size;
+    } data_packet_data;
   };
 } voyager_message_t;
 
@@ -67,7 +73,7 @@ typedef enum {
  * @return The CRC of the application as a uint32_t
  */
 voyager_bootloader_app_crc_t
-voyager_private_calculate_crc(void *buffer, const size_t app_size);
+voyager_private_calculate_crc(const void *buffer, const size_t app_size);
 
 /**
  * @brief voyager_private_get_desired_state Gets the desired state of the

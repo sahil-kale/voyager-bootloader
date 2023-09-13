@@ -22,3 +22,26 @@ voyager_error_E voyager_bootloader_send_to_host(void const *const data,
 
   return (voyager_error_E)mock_c()->returnValue().value.intValue;
 }
+
+voyager_error_E voyager_bootloader_hal_erase_flash(
+    const voyager_bootloader_addr_size_t start_address,
+    const voyager_bootloader_addr_size_t end_address) {
+  mock_c()
+      ->actualCall("voyager_bootloader_hal_erase_flash")
+      ->withUnsignedLongIntParameters("start_address", start_address)
+      ->withUnsignedLongIntParameters("end_address", end_address);
+
+  return (voyager_error_E)mock_c()->returnValue().value.intValue;
+}
+
+voyager_error_E
+voyager_bootloader_hal_write_flash(const voyager_bootloader_addr_size_t address,
+                                   void const *const data,
+                                   size_t const length) {
+  mock_c()
+      ->actualCall("voyager_bootloader_hal_write_flash")
+      ->withUnsignedLongIntParameters("address", address)
+      ->withMemoryBufferParameter("data", data, length);
+
+  return (voyager_error_E)mock_c()->returnValue().value.intValue;
+}

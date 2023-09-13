@@ -161,8 +161,8 @@ voyager_bootloader_nvm_read(const voyager_nvm_key_E key,
  * returned by the NVM_read function.
  */
 voyager_error_E voyager_bootloader_hal_erase_flash(
-    const voyager_bootloader_nvm_data_t start_address,
-    const voyager_bootloader_nvm_data_t end_address);
+    const voyager_bootloader_addr_size_t start_address,
+    const voyager_bootloader_addr_size_t end_address);
 
 /**
  * @brief voyager_bootloader_hal_write_flash Writes data to the flash memory of
@@ -176,7 +176,7 @@ voyager_error_E voyager_bootloader_hal_erase_flash(
  * implemented by the application
  */
 voyager_error_E
-voyager_bootloader_hal_write_flash(const voyager_bootloader_nvm_data_t address,
+voyager_bootloader_hal_write_flash(const voyager_bootloader_addr_size_t address,
                                    void const *const data, size_t const length);
 
 /**

@@ -29,6 +29,8 @@ typedef struct {
   bool pending_data; // note: this flag acts as a de-facto mutex
   bool packet_overrun;
 
+  voyager_dfu_error_E dfu_error;
+
   uint8_t ack_message_buffer[VOYAGER_DFU_ACK_MESSAGE_SIZE];
 
   uint8_t dfu_sequence_number;

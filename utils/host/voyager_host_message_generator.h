@@ -46,10 +46,18 @@ bool voyager_host_message_generator_generate_start_request(
   return ret;
 }
 
-bool voyager_host_message_generator_generate_data_packet(
+/**
+ * @brief voyager_host_message_generator_generate_data_packet Generates a data
+ * @param buffer The buffer to write the packet to
+ * @param buffer_size The size of the buffer
+ * @param sequence_number The sequence number of the packet to ACK
+ * @return the number of bytes written to the buffer
+ *
+ */
+size_t voyager_host_message_generator_generate_data_packet(
     uint8_t *const buffer, size_t len, const uint8_t *const payload,
     size_t payload_len, bool reset_sequence_number) {
-  bool ret = false;
+  size_t ret = 0;
   if ((buffer != NULL) && (len >= payload_len + 2U)) {
     buffer[0] = VOYAGER_HOST_MESSAGE_ID_DATA;
     // first byte is the sequence number
@@ -61,7 +69,9 @@ bool voyager_host_message_generator_generate_data_packet(
     sequence_number = (sequence_number + 1) % 256;
     // copy the payload
     memcpy(&buffer[2], payload, payload_len);
+    ret = payload_len + 2U;
   }
+
   return ret;
 }
 

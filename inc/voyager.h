@@ -182,19 +182,4 @@ voyager_error_E
 voyager_bootloader_hal_write_flash(const voyager_bootloader_addr_size_t address,
                                    void const *const data, size_t const length);
 
-/**
- * @brief voyager_bootloader_hal_read_flash Reads data from the flash memory of
- * the MCU
- * @param address The address of the flash memory to read from
- * @param data The data to read from the flash memory
- * @param length The length of the data to read from the flash memory
- * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
- *
- * @note This function is called by the bootloader and is required to be
- * implemented by the application
- */
-voyager_error_E
-voyager_bootloader_hal_read_flash(voyager_bootloader_nvm_data_t address,
-                                  void *const data, size_t const length);
-
 #endif // VOYAGER_H

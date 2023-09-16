@@ -136,6 +136,40 @@ voyager_error_E voyager_private_generate_ack_message(
 voyager_message_t voyager_private_unpack_message(uint8_t *const message_buffer,
                                                  size_t const message_size);
 
+/**
+ * @brief voyager_private_init_dfu Initializes the DFU bootloader by erasing
+ * flash
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ */
+voyager_error_E voyager_private_init_dfu(void);
+
+/**
+ * @brief voyager_private_process_start_packet Processes a start packet
+ * @param message The message to process
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ * @note This function populates the acknowledgement message buffer, but does
+ * NOT send an ack message
+ */
+voyager_error_E
+voyager_private_process_start_packet(const voyager_message_t *const message);
+
+/**
+ * @brief voyager_private_process_data_packet Processes a data packet
+ * @param message The message to process
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ * @note This function populates the acknowledgement message buffer, but does
+ * NOT send an ack message
+ */
+voyager_error_E
+voyager_private_process_data_packet(const voyager_message_t *const message);
+
+/**
+ * @brief voyager_private_verify_flash Verifies the flash memory of the MCU
+ * @param result The result of the flash verification
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ */
+voyager_error_E voyager_private_verify_flash(bool *const result);
+
 #ifdef UNIT_TEST
 /**
  * @brief voyager_private_get_data Gets a pointer of the voyager data struct

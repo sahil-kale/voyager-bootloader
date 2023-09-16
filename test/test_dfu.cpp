@@ -114,10 +114,7 @@ TEST(test_dfu, start_request_with_enter_dfu_request) {
     // and pass it as the payload to the generate ack message function
     uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
     uint8_t crc_buffer[4] = {0};
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
     // Expect the bootloader send_to_host function to be called
@@ -277,10 +274,7 @@ TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
     // and pass it as the payload to the generate ack message function
     uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
     uint8_t crc_buffer[4] = {0};
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
     // Expect the bootloader send_to_host function to be called
@@ -345,10 +339,7 @@ TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
         // and pass it as the payload to the generate ack message function
         uint32_t crc = voyager_host_calculate_crc(&buffer[1], chunk_size + 1U);
         uint8_t crc_buffer[4] = {0};
-        crc_buffer[0] = (crc >> 24) & 0xFF;
-        crc_buffer[1] = (crc >> 16) & 0xFF;
-        crc_buffer[2] = (crc >> 8) & 0xFF;
-        crc_buffer[3] = crc & 0xFF;
+        voyager_private_pack_crc_into_buffer(crc_buffer, crc);
 
         voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
@@ -415,10 +406,7 @@ TEST(test_dfu, out_of_sequence_data_packet) {
     // and pass it as the payload to the generate ack message function
     uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
     uint8_t crc_buffer[4] = {0};
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
     // Expect the bootloader send_to_host function to be called
@@ -470,10 +458,7 @@ TEST(test_dfu, out_of_sequence_data_packet) {
     // compute the CRC of the last 7 bytes of the buffer sent by the host
     // and pass it as the payload to the generate ack message function
     crc = voyager_host_calculate_crc(&buffer[1], bytes_written - 1U);
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
 
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet_1, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
@@ -558,10 +543,7 @@ TEST(test_dfu, start_packet_while_in_dfu_receive) {
     // and pass it as the payload to the generate ack message function
     uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
     uint8_t crc_buffer[4] = {0};
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
     // Expect the bootloader send_to_host function to be called
@@ -613,10 +595,7 @@ TEST(test_dfu, start_packet_while_in_dfu_receive) {
     // compute the CRC of the last 7 bytes of the buffer sent by the host
     // and pass it as the payload to the generate ack message function
     crc = voyager_host_calculate_crc(&buffer[1], bytes_written - 1U);
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
 
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet_1, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
@@ -652,10 +631,7 @@ TEST(test_dfu, start_packet_while_in_dfu_receive) {
     // compute the CRC of the last 7 bytes of the buffer sent by the host
     // and pass it as the payload to the generate ack message function
     crc = voyager_host_calculate_crc(&buffer[1], 7);
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
 
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet_2, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
@@ -724,10 +700,7 @@ TEST(test_dfu, packet_overrun_dfu_receive) {
     // and pass it as the payload to the generate ack message function
     uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
     uint8_t crc_buffer[4] = {0};
-    crc_buffer[0] = (crc >> 24) & 0xFF;
-    crc_buffer[1] = (crc >> 16) & 0xFF;
-    crc_buffer[2] = (crc >> 8) & 0xFF;
-    crc_buffer[3] = crc & 0xFF;
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
     voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
 
     // Expect the bootloader send_to_host function to be called

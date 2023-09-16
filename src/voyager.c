@@ -613,6 +613,6 @@ void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_b
     buffer[3] = crc & 0xFF;
 }
 
-#ifdef UNIT_TEST
+#ifdef VOYAGER_UNIT_TEST
 voyager_data_t *voyager_private_get_data(void) { return &voyager_data; }
-#endif  // UNIT_TEST
+#endif  // VOYAGER_UNIT_TEST

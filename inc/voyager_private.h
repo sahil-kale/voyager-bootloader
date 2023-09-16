@@ -4,14 +4,9 @@
 
 #include "voyager.h"
 
-#ifdef UNIT_TEST
-#define VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE 64
-#endif  // UNIT_TEST
-
 #ifndef VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE
 #error "The VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE macro must be defined."
 #else
-// Assert that the VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE macro is >= 8
 #if VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE < 8
 #error "The VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE macro must be >= 8."
 #endif  // VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE < 8
@@ -171,7 +166,7 @@ voyager_error_E voyager_private_verify_flash(bool *const result);
  */
 void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_bootloader_app_crc_t crc);
 
-#ifdef UNIT_TEST
+#ifdef VOYAGER_UNIT_TEST
 /**
  * @brief voyager_private_get_data Gets a pointer of the voyager data struct
  * @return The voyager data struct pointer
@@ -180,6 +175,6 @@ void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_b
  * regular application code
  */
 voyager_data_t *voyager_private_get_data(void);
-#endif  // UNIT_TEST
+#endif  // VOYAGER_UNIT_TEST
 
 #endif  // VOYAGER_PRIVATE_H

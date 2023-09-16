@@ -18,4 +18,4 @@ void mock_dfu_init(void);
 
 uint8_t *mock_dfu_get_flash(void);
 
-#endif // MOCK_DFU_H
+#endif  // MOCK_DFU_H

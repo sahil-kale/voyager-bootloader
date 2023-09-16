@@ -18,6 +18,10 @@ voyager_error_E voyager_bootloader_init(void) {
   voyager_data.dfu_sequence_number = 0;
   voyager_data.bytes_written = 0;
   voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
+  voyager_data.app_size_cached = 0U;
+  // memset the ack message buffer to 0
+  memset(voyager_data.ack_message_buffer, 0,
+         sizeof(voyager_data.ack_message_buffer));
   return VOYAGER_ERROR_NONE;
 }
 
@@ -128,9 +132,11 @@ voyager_private_enter_state(const voyager_bootloader_state_E current_state,
       }
 
     } break;
+    case VOYAGER_STATE_IDLE: {
+      voyager_data.app_size_cached = 0U;
+    }
     case VOYAGER_STATE_JUMP_TO_APP:
     case VOYAGER_STATE_NOT_INITIALIZED:
-    case VOYAGER_STATE_IDLE:
     default:
       // do nothing
       break;
@@ -176,6 +182,8 @@ voyager_private_run_state(const voyager_bootloader_state_E state) {
               // Write the app size to NVM
               ret =
                   voyager_bootloader_nvm_write(VOYAGER_NVM_KEY_APP_SIZE, &data);
+              // cache the app size for later use
+              voyager_data.app_size_cached = message.start_packet_data.app_size;
               data.app_crc = message.start_packet_data.app_crc;
               if (ret == VOYAGER_ERROR_NONE) {
                 // Write the app CRC to NVM
@@ -424,15 +432,9 @@ voyager_bootloader_state_E voyager_private_get_desired_state(void) {
     }
   } break;
   case VOYAGER_STATE_DFU_RECEIVE: {
-    // get the app size from NVM
-    voyager_bootloader_nvm_data_t data;
-    voyager_error_E err =
-        voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_SIZE, &data);
-
-    if ((err != VOYAGER_ERROR_NONE) ||
-        (voyager_data.dfu_error != VOYAGER_DFU_ERROR_NONE)) {
+    if (voyager_data.dfu_error != VOYAGER_DFU_ERROR_NONE) {
       desired_state = VOYAGER_STATE_IDLE;
-    } else if (voyager_data.bytes_written == data.app_size) {
+    } else if (voyager_data.bytes_written == voyager_data.app_size_cached) {
       // Improvement: feature flag this state to move back to idle if user
       // desires
       desired_state = VOYAGER_STATE_JUMP_TO_APP;

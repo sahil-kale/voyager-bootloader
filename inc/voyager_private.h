@@ -29,6 +29,9 @@ typedef struct {
   bool pending_data; // note: this flag acts as a de-facto mutex
   bool packet_overrun;
 
+  size_t app_size_cached; // Used to prevent the app size from being read from
+                          // NVM multiple times
+
   voyager_dfu_error_E dfu_error;
 
   uint8_t ack_message_buffer[VOYAGER_DFU_ACK_MESSAGE_SIZE];

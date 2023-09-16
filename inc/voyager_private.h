@@ -22,6 +22,7 @@
 typedef struct {
     voyager_bootloader_state_E state;
     voyager_bootloader_request_E request;
+    voyager_error_E error_latched;
     bool app_failed_crc_check;
     bool valid_start_request_received;
 
@@ -162,6 +163,13 @@ voyager_error_E voyager_private_process_data_packet(const voyager_message_t *con
  * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
  */
 voyager_error_E voyager_private_verify_flash(bool *const result);
+
+/**
+ * @brief voyager_private_pack_crc_into_buffer Packs a CRC into a buffer
+ * @param buffer The buffer to pack the CRC into
+ * @param crc The CRC to pack into the buffer
+ */
+void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_bootloader_app_crc_t crc);
 
 #ifdef UNIT_TEST
 /**

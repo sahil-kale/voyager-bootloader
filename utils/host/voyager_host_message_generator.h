@@ -1,7 +1,9 @@
 #ifndef VOYAGER_HOST_MESSAGE_GENERATOR_H
 #define VOYAGER_HOST_MESSAGE_GENERATOR_H
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef enum {
     VOYAGER_HOST_MESSAGE_ID_UNKNOWN = 0,

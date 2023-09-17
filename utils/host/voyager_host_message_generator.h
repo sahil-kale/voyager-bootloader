@@ -10,6 +10,28 @@ typedef enum {
     VOYAGER_HOST_MESSAGE_ID_DATA,
 } voyager_host_message_id_E;
 
+typedef enum {
+    VOYAGER_TARGET_DFU_ERROR_NONE = 0,
+    VOYAGER_TARGET_DFU_ERROR_PACKET_OVERRUN,
+    VOYAGER_TARGET_DFU_ERROR_ENTER_DFU_NOT_REQUESTED,
+    VOYAGER_TARGET_DFU_ERROR_OUT_OF_SEQUENCE,
+    VOYAGER_TARGET_DFU_ERROR_INVALID_MESSAGE_ID,
+    VOYAGER_TARGET_DFU_ERROR_SIZE_TOO_LARGE,
+    VOYAGER_TARGET_DFU_ERROR_INTERNAL_ERROR,
+} voyager_target_dfu_error_E;
+
+typedef enum {
+    VOYAGER_HOST_DFU_ERROR_NONE = 0,
+    VOYAGER_HOST_DFU_ERROR_PACKET_OVERRUN,
+    VOYAGER_HOST_DFU_ERROR_ENTER_DFU_NOT_REQUESTED,
+    VOYAGER_HOST_DFU_ERROR_OUT_OF_SEQUENCE,
+    VOYAGER_HOST_DFU_ERROR_INVALID_MESSAGE_ID,
+    VOYAGER_HOST_DFU_ERROR_SIZE_TOO_LARGE,
+    VOYAGER_HOST_DFU_ERROR_INTERNAL_ERROR,
+    VOYAGER_HOST_DFU_ERROR_CRC_MISMATCH,
+    VOYAGER_HOST_DFU_ERROR_UNKNOWN_ERROR_CODE,
+} voyager_host_dfu_error_E;
+
 /**
  * @brief voyager_host_message_generator_generate_start_request Generates a
  * start request packet
@@ -73,6 +95,12 @@ size_t voyager_host_message_generator_generate_data_packet(uint8_t *const buffer
     return ret;
 }
 
+/**
+ * @brief voyager_host_calculate_crc Calculates the CRC of a buffer
+ * @param buffer The buffer to calculate the CRC of
+ * @param app_size The size of the buffer
+ * @return The CRC of the buffer
+ */
 uint32_t voyager_host_calculate_crc(const void *buffer, const size_t app_size) {
     size_t size = app_size;
 
@@ -114,6 +142,71 @@ uint32_t voyager_host_calculate_crc(const void *buffer, const size_t app_size) {
     }
 
     return calculated_crc;
+}
+
+voyager_host_dfu_error_E voyager_host_compare_ack_message(const void *const msg, size_t len, const void *const previous_message,
+                                                          size_t previous_message_len) {
+    static const size_t VOYAGER_ACK_MESSAGE_SIZE = 8U;
+    voyager_host_dfu_error_E ret = VOYAGER_HOST_DFU_ERROR_NONE;
+    do {
+        if (len != VOYAGER_ACK_MESSAGE_SIZE) {
+            ret = VOYAGER_HOST_DFU_ERROR_SIZE_TOO_LARGE;
+            break;
+        }
+
+        const uint8_t *const buffer = (uint8_t *)msg;
+        if (buffer[0] != VOYAGER_HOST_MESSAGE_ID_ACK) {
+            ret = VOYAGER_HOST_DFU_ERROR_INVALID_MESSAGE_ID;
+            break;
+        }
+
+        // 2nd byte of the buffer is the DFU error code
+
+        voyager_target_dfu_error_E err = (voyager_target_dfu_error_E)buffer[1];
+
+        switch (err) {
+            case VOYAGER_TARGET_DFU_ERROR_NONE:
+                ret = VOYAGER_HOST_DFU_ERROR_NONE;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_PACKET_OVERRUN:
+                ret = VOYAGER_HOST_DFU_ERROR_PACKET_OVERRUN;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_ENTER_DFU_NOT_REQUESTED:
+                ret = VOYAGER_HOST_DFU_ERROR_ENTER_DFU_NOT_REQUESTED;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_OUT_OF_SEQUENCE:
+                ret = VOYAGER_HOST_DFU_ERROR_OUT_OF_SEQUENCE;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_INVALID_MESSAGE_ID:
+                ret = VOYAGER_HOST_DFU_ERROR_INVALID_MESSAGE_ID;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_SIZE_TOO_LARGE:
+                ret = VOYAGER_HOST_DFU_ERROR_SIZE_TOO_LARGE;
+                break;
+            case VOYAGER_TARGET_DFU_ERROR_INTERNAL_ERROR:
+                ret = VOYAGER_HOST_DFU_ERROR_INTERNAL_ERROR;
+                break;
+            default:
+                ret = VOYAGER_HOST_DFU_ERROR_UNKNOWN_ERROR_CODE;
+                break;
+        }
+
+        if (ret != VOYAGER_HOST_DFU_ERROR_NONE) {
+            break;
+        }
+
+        // If the voyager error is none, then we need to check the CRC
+        const uint8_t *const previous_message_buffer = (uint8_t *)previous_message;
+        const uint32_t crc = voyager_host_calculate_crc(previous_message_buffer + 1, previous_message_len - 1);
+        const uint32_t crc_from_target = (buffer[2] << 24) | (buffer[3] << 16) | (buffer[4] << 8) | buffer[5];
+        if (crc != crc_from_target) {
+            ret = VOYAGER_HOST_DFU_ERROR_CRC_MISMATCH;
+            break;
+        }
+
+    } while (false);
+
+    return ret;
 }
 
 #endif  // VOYAGER_HOST_MESSAGE_GENERATOR_H

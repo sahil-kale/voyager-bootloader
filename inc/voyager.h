@@ -8,6 +8,7 @@ typedef enum {
     VOYAGER_ERROR_NONE = 0,
     VOYAGER_ERROR_INVALID_ARGUMENT,
     VOYAGER_ERROR_NOT_IMPLEMENTED,
+    VOYAGER_ERROR_GENERIC_ERROR,
 } voyager_error_E;
 
 typedef enum {

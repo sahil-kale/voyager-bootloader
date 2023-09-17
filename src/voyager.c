@@ -396,6 +396,9 @@ voyager_error_E voyager_private_generate_ack_message(const voyager_dfu_error_E e
             break;
         }
 
+        // clear the buffer
+        memset(message_buffer, 0, VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
         // Set the message ID
         message_buffer[0] = VOYAGER_MESSAGE_ID_ACK;
 
@@ -405,8 +408,6 @@ voyager_error_E voyager_private_generate_ack_message(const voyager_dfu_error_E e
         // Set the metadata if there is any
         if (metadata != NULL) {
             memcpy(&message_buffer[2], metadata, 4);
-        } else {
-            memset(&message_buffer[2], 0, 4);
         }
 
     } while (false);

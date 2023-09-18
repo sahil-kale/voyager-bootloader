@@ -47,3 +47,13 @@ voyager_error_E voyager_bootloader_hal_write_flash(const voyager_bootloader_addr
 
     return (voyager_error_E)mock_c()->returnValue().value.intValue;
 }
+
+voyager_error_E voyager_bootloader_hal_read_flash(const voyager_bootloader_addr_size_t address, void *const data,
+                                                  size_t const length) {
+    // make a const pointer to the address
+    const uint8_t *const flash = (const uint8_t *const)address;
+    // copy the data from the flash to the data pointer
+    memcpy(data, flash, length);
+
+    return VOYAGER_ERROR_NONE;
+}

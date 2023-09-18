@@ -9,7 +9,6 @@ typedef struct {
     voyager_bootloader_addr_size_t app_start_address;
     voyager_bootloader_addr_size_t app_end_address;
     voyager_bootloader_app_size_t app_size;
-    voyager_bootloader_verify_flash_before_jumping_t verify_flash_before_jumping;
 } mock_nvm_data_t;
 
 mock_nvm_data_t *mock_nvm_get_data(void);

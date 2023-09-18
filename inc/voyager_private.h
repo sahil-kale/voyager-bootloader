@@ -22,7 +22,7 @@ typedef struct {
     bool valid_start_request_received;
 
     uint8_t message_buffer[VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE];
-    uint8_t packet_size;
+    uint32_t packet_size;
     bool pending_data;  // note: this flag acts as a de-facto mutex
     bool packet_overrun;
 
@@ -169,7 +169,7 @@ voyager_error_E voyager_private_verify_flash(bool *const result);
  * @param buffer The buffer to pack the CRC into
  * @param crc The CRC to pack into the buffer
  */
-void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_bootloader_app_crc_t crc);
+void voyager_private_pack_crc_into_buffer(uint8_t buffer[4], const voyager_bootloader_app_crc_t crc);
 
 #ifdef VOYAGER_UNIT_TEST
 /**

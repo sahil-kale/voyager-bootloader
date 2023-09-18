@@ -214,17 +214,14 @@ voyager_error_E voyager_private_run_state(const voyager_bootloader_state_E state
                     }
                 }
 
-                // Jump to the app!
-                voyager_bootloader_nvm_data_t app_reset_vector_address;
-                ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_RESET_VECTOR_ADDRESS, &app_reset_vector_address);
+                // Get the app start address
+                ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
                 if (ret != VOYAGER_ERROR_NONE) {
                     break;
                 }
 
-                // Call the reset vector
-                reset_vector_U reset_vector;
-                reset_vector.addr = app_reset_vector_address;
-                reset_vector.func();
+                // Jump to the app!
+                ret = voyager_bootloader_hal_jump_to_app(data.app_start_address);
             } break;
 
             case VOYAGER_STATE_DFU_RECEIVE: {

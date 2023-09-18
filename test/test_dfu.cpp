@@ -40,7 +40,7 @@ TEST(test_dfu, start_request_without_enter_dfu_request) {
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
     // Create a start request packet
-    uint8_t buffer[8];
+    uint8_t buffer[8] = {0};
     voyager_host_message_generator_generate_start_request(buffer, 8, 1, 1);
 
     // Process the packet
@@ -179,7 +179,7 @@ TEST(test_dfu, start_request_over_size) {
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
     // Create a start request packet
-    uint8_t buffer[8];
+    uint8_t buffer[8] = {0};
     voyager_host_message_generator_generate_start_request(buffer, 8, 1, 1);
 
     // Process the packet
@@ -202,7 +202,7 @@ TEST(test_dfu, start_request_overrun) {
     CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_request(VOYAGER_REQUEST_ENTER_DFU));
 
     // Create a start request packet
-    uint8_t buffer[8];
+    uint8_t buffer[8] = {0};
     voyager_host_message_generator_generate_start_request(buffer, 8, 1, 1);
 
     // Process the packet
@@ -782,7 +782,7 @@ TEST(test_dfu, data_but_not_started) {
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
     // Create a data packet
-    uint8_t buffer[8];
+    uint8_t buffer[8] = {0};
     voyager_host_message_generator_generate_data_packet(buffer, 8, NULL, 0, false);
 
     // Process the packet
@@ -877,7 +877,7 @@ TEST(test_dfu, size_too_big) {
 // Test the packet unpack function
 TEST(test_dfu, start_request_unpack) {
     // Create a start request packet
-    uint8_t buffer[8];
+    uint8_t buffer[8] = {0};
     voyager_host_message_generator_generate_start_request(buffer, 8, 0XADBEEF, 0xDEADBEEF);
 
     // Unpack the packet

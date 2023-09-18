@@ -504,7 +504,7 @@ voyager_error_E voyager_private_process_start_packet(const voyager_message_t *co
 
         voyager_bootloader_app_crc_t crc = voyager_private_calculate_crc(&voyager_data.message_buffer[1], 7);
 
-        uint8_t metadata[4];
+        uint8_t metadata[4] = {0};
         voyager_private_pack_crc_into_buffer(metadata, crc);
 
         // Generate the ack message
@@ -547,7 +547,7 @@ voyager_error_E voyager_private_process_data_packet(const voyager_message_t *con
             voyager_bootloader_app_crc_t crc =
                 voyager_private_calculate_crc(&voyager_data.message_buffer[1], message->data_packet_data.payload_size + 1);
 
-            uint8_t metadata[4];
+            uint8_t metadata[4] = {0};
             // copy the crc into the metadata in big endian
             voyager_private_pack_crc_into_buffer(metadata, crc);
 
@@ -621,7 +621,9 @@ voyager_error_E voyager_private_verify_flash(bool *const result) {
     return ret;
 }
 
-void voyager_private_pack_crc_into_buffer(uint8_t *const buffer, const voyager_bootloader_app_crc_t crc) {
+void voyager_private_pack_crc_into_buffer(uint8_t buffer[4], const voyager_bootloader_app_crc_t crc) {
+    // memset the buffer to 0
+    memset(buffer, 0, 4);
     buffer[0] = (crc >> 24) & 0xFF;
     buffer[1] = (crc >> 16) & 0xFF;
     buffer[2] = (crc >> 8) & 0xFF;

@@ -67,9 +67,19 @@ typedef enum {
  * @brief voyager_private_calculate_crc Calculates the CRC of the application
  * @param app_start_address The start address of the application
  * @param app_size The size of the application
+ * @param is_flash_address Whether or not the start address is a flash address
+ * @note If is_flash_address is true, the buffer will redirect calls to voyager_bootloader_hal_read_flash instead of manually
+ * reading from the buffer
  * @return The CRC of the application as a uint32_t
  */
 voyager_bootloader_app_crc_t voyager_private_calculate_crc(const void *buffer, const size_t app_size);
+
+/**
+ * @brief voyager_private_calculate_crc_stream Further calculates the CRC using the existing CRC tables and a single byte
+ * @param byte The byte to add to the CRC
+ * @param crc The CRC to add the byte to
+ */
+void voyager_private_calculate_crc_stream(const uint8_t byte, voyager_bootloader_app_crc_t *const crc);
 
 /**
  * @brief voyager_private_get_desired_state Gets the desired state of the

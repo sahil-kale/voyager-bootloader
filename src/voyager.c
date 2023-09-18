@@ -221,29 +221,19 @@ voyager_error_E voyager_private_run_state(const voyager_bootloader_state_E state
                 }
             } break;
             case VOYAGER_STATE_JUMP_TO_APP: {
-                // Get the NVM key for whether we should verify the flash before jumping
-                // to the app
-                voyager_bootloader_nvm_data_t data;
-                ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING, &data);
-
+                bool flash_verified = false;
+                ret = voyager_private_verify_flash(&flash_verified);
                 if (ret != VOYAGER_ERROR_NONE) {
                     break;
                 }
-                // If we should verify the flash before jumping to the app, we do so
-                if (data.verify_flash_before_jumping) {
-                    bool flash_verified = false;
-                    ret = voyager_private_verify_flash(&flash_verified);
-                    if (ret != VOYAGER_ERROR_NONE) {
-                        break;
-                    }
 
-                    if (flash_verified == false) {
-                        voyager_data.app_failed_crc_check = true;
-                        break;
-                    }
+                if (flash_verified == false) {
+                    voyager_data.app_failed_crc_check = true;
+                    break;
                 }
 
                 // Get the app start address
+                voyager_bootloader_nvm_data_t data;
                 ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
                 if (ret != VOYAGER_ERROR_NONE) {
                     break;

@@ -24,9 +24,6 @@ voyager_error_E voyager_bootloader_nvm_write(const voyager_nvm_key_E key, voyage
         case VOYAGER_NVM_KEY_APP_END_ADDRESS: {
             mock_nvm_data.app_end_address = data->app_end_address;
         } break;
-        case VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING: {
-            mock_nvm_data.verify_flash_before_jumping = data->verify_flash_before_jumping;
-        } break;
         default: {
             error = VOYAGER_ERROR_INVALID_ARGUMENT;
         } break;
@@ -49,9 +46,6 @@ voyager_error_E voyager_bootloader_nvm_read(const voyager_nvm_key_E key, voyager
         } break;
         case VOYAGER_NVM_KEY_APP_END_ADDRESS: {
             data->app_end_address = mock_nvm_data.app_end_address;
-        } break;
-        case VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING: {
-            data->verify_flash_before_jumping = mock_nvm_data.verify_flash_before_jumping;
         } break;
         default: {
             error = VOYAGER_ERROR_INVALID_ARGUMENT;

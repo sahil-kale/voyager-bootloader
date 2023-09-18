@@ -39,7 +39,6 @@ typedef enum {
     VOYAGER_NVM_KEY_APP_END_ADDRESS,  // Used to ensure the app size does not
                                       // exceed the max bound
     VOYAGER_NVM_KEY_APP_SIZE,
-    VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING,
 } voyager_nvm_key_E;
 
 typedef enum {

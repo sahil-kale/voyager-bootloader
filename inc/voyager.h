@@ -38,7 +38,6 @@ typedef enum {
     VOYAGER_NVM_KEY_APP_START_ADDRESS,
     VOYAGER_NVM_KEY_APP_END_ADDRESS,  // Used to ensure the app size does not
                                       // exceed the max bound
-    VOYAGER_NVM_KEY_APP_RESET_VECTOR_ADDRESS,
     VOYAGER_NVM_KEY_APP_SIZE,
     VOYAGER_NVM_KEY_VERIFY_FLASH_BEFORE_JUMPING,
 } voyager_nvm_key_E;
@@ -59,7 +58,6 @@ typedef union {
     voyager_bootloader_app_crc_t app_crc;
     voyager_bootloader_addr_size_t app_start_address;
     voyager_bootloader_addr_size_t app_end_address;
-    voyager_bootloader_addr_size_t app_reset_vector_address;
     voyager_bootloader_app_size_t app_size;
     voyager_bootloader_verify_flash_before_jumping_t verify_flash_before_jumping;
 } voyager_bootloader_nvm_data_t;
@@ -171,5 +169,13 @@ voyager_error_E voyager_bootloader_hal_erase_flash(const voyager_bootloader_addr
  */
 voyager_error_E voyager_bootloader_hal_write_flash(const voyager_bootloader_addr_size_t address, void const *const data,
                                                    size_t const length);
+
+/**
+ * @brief voyager_bootloader_hal_jump_to_app Jumps to the application
+ * @param app_start_address The start address of the application
+ * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
+ * @note This function is called by the bootloader and is required to be implemented by the application
+ */
+voyager_error_E voyager_bootloader_hal_jump_to_app(const voyager_bootloader_addr_size_t app_start_address);
 
 #endif  // VOYAGER_H

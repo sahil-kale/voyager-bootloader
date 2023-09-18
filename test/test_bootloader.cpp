@@ -14,7 +14,6 @@ TEST_GROUP(test_bootloader_state_machine){
 
     void setup(){mock().clear();
 mock_nvm_data_t *nvm_data = mock_nvm_get_data();
-nvm_data->app_reset_vector_address = (uintptr_t)&mock_reset_vector;
 
 uint8_t *mock_app_start_address = mock_dfu_get_flash();
 nvm_data->app_start_address = (uintptr_t)mock_app_start_address;
@@ -69,7 +68,10 @@ TEST(test_bootloader_state_machine, test_bootloader_jumps_to_application_on_requ
     CHECK_EQUAL(VOYAGER_STATE_JUMP_TO_APP, voyager_private_get_desired_state());
 
     // Check that the reset vector is called
-    mock().expectOneCall("mock_reset_vector");
+    mock()
+        .expectOneCall("voyager_bootloader_hal_jump_to_app")
+        .withUnsignedLongLongIntParameter("app_start_address", nvm_data->app_start_address)
+        .andReturnValue(VOYAGER_ERROR_NONE);
     CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
     mock().checkExpectations();
 
@@ -125,7 +127,10 @@ TEST(test_bootloader_state_machine, test_app_good_crc_verify) {
     CHECK_EQUAL(VOYAGER_STATE_JUMP_TO_APP, voyager_private_get_desired_state());
 
     // Check that the reset vector is called
-    mock().expectOneCall("mock_reset_vector");
+    mock()
+        .expectOneCall("voyager_bootloader_hal_jump_to_app")
+        .withUnsignedLongLongIntParameter("app_start_address", nvm_data->app_start_address)
+        .andReturnValue(VOYAGER_ERROR_NONE);
     CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
     mock().checkExpectations();
 

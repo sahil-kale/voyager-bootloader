@@ -56,11 +56,6 @@ typedef struct {
     };
 } voyager_message_t;
 
-typedef union {
-    void (*func)(void);
-    voyager_bootloader_nvm_data_t addr;
-} reset_vector_U;
-
 typedef enum {
     VOYAGER_MESSAGE_ID_UNKNOWN = 0,
     VOYAGER_MESSAGE_ID_START,

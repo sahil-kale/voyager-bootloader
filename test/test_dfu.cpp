@@ -15,7 +15,6 @@ TEST_GROUP(test_dfu){
 
     void setup(){mock().clear();
 mock_nvm_data_t *nvm_data = mock_nvm_get_data();
-nvm_data->app_reset_vector_address = (uintptr_t)&mock_reset_vector;
 
 uint8_t *mock_app_start_address = mock_dfu_get_flash();
 nvm_data->app_start_address = (uintptr_t)mock_app_start_address;

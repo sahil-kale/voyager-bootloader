@@ -1,4 +1,4 @@
-# voyager-bootloader
+# Voyager Bootloader
 
 ![Logo-01](https://github.com/sahil-kale/voyager-bootloader/assets/32375512/abf76c17-af60-4ad2-bc63-7eeb9f0e2d34)
 

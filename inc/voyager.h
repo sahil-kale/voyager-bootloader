@@ -51,14 +51,12 @@ typedef enum {
 typedef uintptr_t voyager_bootloader_addr_size_t;
 typedef uint32_t voyager_bootloader_app_crc_t;
 typedef uint32_t voyager_bootloader_app_size_t;
-typedef bool voyager_bootloader_verify_flash_before_jumping_t;
 
 typedef union {
     voyager_bootloader_app_crc_t app_crc;
     voyager_bootloader_addr_size_t app_start_address;
     voyager_bootloader_addr_size_t app_end_address;
     voyager_bootloader_app_size_t app_size;
-    voyager_bootloader_verify_flash_before_jumping_t verify_flash_before_jumping;
 } voyager_bootloader_nvm_data_t;
 
 /** Primary Bootloader Functions **/

@@ -884,6 +884,6 @@ TEST(test_dfu, start_request_unpack) {
     voyager_message_t message = voyager_private_unpack_message(buffer, 8);
 
     // check that the app CRC and size are correct
-    CHECK_EQUAL(0xDEADBEEF, message.start_packet_data.app_crc);
-    CHECK_EQUAL(0xADBEEF, message.start_packet_data.app_size);
+    CHECK_EQUAL(0xDEADBEEF, message.message_payload.start_packet_data.app_crc);
+    CHECK_EQUAL(0xADBEEF, message.message_payload.start_packet_data.app_size);
 }

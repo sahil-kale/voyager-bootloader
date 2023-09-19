@@ -412,21 +412,21 @@ voyager_message_t voyager_private_unpack_message(uint8_t *const message_buffer, 
     switch (message.header.message_id) {
         case VOYAGER_MESSAGE_ID_START: {
             // unpack the app size and app CRC, all big endian
-            message.start_packet_data.app_size = 0;
-            message.start_packet_data.app_size |= ((uint32_t)message_buffer[1]) << 16;  // MSB
-            message.start_packet_data.app_size |= ((uint32_t)message_buffer[2]) << 8;   // middle
-            message.start_packet_data.app_size |= ((uint32_t)message_buffer[3]) << 0;   // LSB
+            message.message_payload.start_packet_data.app_size = 0;
+            message.message_payload.start_packet_data.app_size |= ((uint32_t)message_buffer[1]) << 16;  // MSB
+            message.message_payload.start_packet_data.app_size |= ((uint32_t)message_buffer[2]) << 8;   // middle
+            message.message_payload.start_packet_data.app_size |= ((uint32_t)message_buffer[3]) << 0;   // LSB
 
-            message.start_packet_data.app_crc = 0;
-            message.start_packet_data.app_crc |= ((uint32_t)message_buffer[4]) << 24;  // MSB
-            message.start_packet_data.app_crc |= ((uint32_t)message_buffer[5]) << 16;  // middle
-            message.start_packet_data.app_crc |= ((uint32_t)message_buffer[6]) << 8;   // middle
-            message.start_packet_data.app_crc |= ((uint32_t)message_buffer[7]) << 0;   // LSB
+            message.message_payload.start_packet_data.app_crc = 0;
+            message.message_payload.start_packet_data.app_crc |= ((uint32_t)message_buffer[4]) << 24;  // MSB
+            message.message_payload.start_packet_data.app_crc |= ((uint32_t)message_buffer[5]) << 16;  // middle
+            message.message_payload.start_packet_data.app_crc |= ((uint32_t)message_buffer[6]) << 8;   // middle
+            message.message_payload.start_packet_data.app_crc |= ((uint32_t)message_buffer[7]) << 0;   // LSB
         } break;
         case VOYAGER_MESSAGE_ID_DATA: {
-            message.data_packet_data.sequence_number = message_buffer[1];
-            message.data_packet_data.payload = &message_buffer[2];
-            message.data_packet_data.payload_size = message_size - 2;
+            message.message_payload.data_packet_data.sequence_number = message_buffer[1];
+            message.message_payload.data_packet_data.payload = &message_buffer[2];
+            message.message_payload.data_packet_data.payload_size = message_size - 2;
         } break;
         case VOYAGER_MESSAGE_ID_ACK: {
             // We shouldn't be unpacking ACK messages... they are sent by device
@@ -469,7 +469,7 @@ voyager_error_E voyager_private_process_start_packet(const voyager_message_t *co
     voyager_error_E ret = VOYAGER_ERROR_NONE;
     do {
         voyager_bootloader_nvm_data_t data;
-        data.app_size = message->start_packet_data.app_size;
+        data.app_size = message->message_payload.start_packet_data.app_size;
 
         // Write the app size to NVM
         ret = voyager_bootloader_nvm_write(VOYAGER_NVM_KEY_APP_SIZE, &data);
@@ -479,8 +479,8 @@ voyager_error_E voyager_private_process_start_packet(const voyager_message_t *co
         }
 
         // cache the app size for later use
-        voyager_data.app_size_cached = message->start_packet_data.app_size;
-        data.app_crc = message->start_packet_data.app_crc;
+        voyager_data.app_size_cached = message->message_payload.start_packet_data.app_size;
+        data.app_crc = message->message_payload.start_packet_data.app_crc;
 
         // Write the app CRC to NVM
         ret = voyager_bootloader_nvm_write(VOYAGER_NVM_KEY_APP_CRC, &data);
@@ -512,7 +512,7 @@ voyager_error_E voyager_private_process_start_packet(const voyager_message_t *co
 voyager_error_E voyager_private_process_data_packet(const voyager_message_t *const message) {
     voyager_error_E ret = VOYAGER_ERROR_NONE;
     do {
-        if (voyager_data.dfu_sequence_number == message->data_packet_data.sequence_number) {
+        if (voyager_data.dfu_sequence_number == message->message_payload.data_packet_data.sequence_number) {
             // Get the NVM key for the app start address
             voyager_bootloader_nvm_data_t data;
             ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
@@ -524,18 +524,19 @@ voyager_error_E voyager_private_process_data_packet(const voyager_message_t *con
             // If the sequence number is correct, we write the payload to flash
             // and increment the sequence number
             ret = voyager_bootloader_hal_write_flash(data.app_start_address + voyager_data.bytes_written,
-                                                     message->data_packet_data.payload, message->data_packet_data.payload_size);
+                                                     message->message_payload.data_packet_data.payload,
+                                                     message->message_payload.data_packet_data.payload_size);
             if (ret != VOYAGER_ERROR_NONE) {
                 break;
             }
             voyager_data.dfu_sequence_number = (voyager_data.dfu_sequence_number + 1) % 256;
-            voyager_data.bytes_written += message->data_packet_data.payload_size;
+            voyager_data.bytes_written += message->message_payload.data_packet_data.payload_size;
 
             // Generate the ack message, with the metadata consisting of the CRC
             // of the sequence and payload
 
-            voyager_bootloader_app_crc_t crc =
-                voyager_private_calculate_crc(&voyager_data.message_buffer[1], message->data_packet_data.payload_size + 1);
+            voyager_bootloader_app_crc_t crc = voyager_private_calculate_crc(
+                &voyager_data.message_buffer[1], message->message_payload.data_packet_data.payload_size + 1);
 
             uint8_t metadata[4] = {0};
             // copy the crc into the metadata in big endian

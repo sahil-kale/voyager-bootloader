@@ -53,7 +53,7 @@ typedef struct {
             uint8_t *payload;
             size_t payload_size;
         } data_packet_data;
-    };
+    } message_payload;
 } voyager_message_t;
 
 typedef enum {

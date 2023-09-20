@@ -1,3 +1,14 @@
+/**
+ * @file voyager.h
+ * @brief This file contains the public API for the voyager bootloader
+ *
+ * See the README.md for more information on how to use this API
+ *
+ * See LICENCE.md for the license information for this library
+ *
+ * @author Sahil Kale
+ */
+
 #ifndef VOYAGER_H
 #define VOYAGER_H
 #include <stdbool.h>

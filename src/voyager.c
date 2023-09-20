@@ -1,3 +1,12 @@
+/**
+ * @file voyager.c
+ * @brief Implementation of the bootloader
+ *
+ * This file contains the implementation of the bootloader
+ *
+ * @author Sahil Kale
+ */
+
 #include "voyager.h"
 
 #include <string.h>

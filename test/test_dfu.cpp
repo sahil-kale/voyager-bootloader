@@ -887,3 +887,58 @@ TEST(test_dfu, start_request_unpack) {
     CHECK_EQUAL(0xDEADBEEF, message.message_payload.start_packet_data.app_crc);
     CHECK_EQUAL(0xADBEEF, message.message_payload.start_packet_data.app_size);
 }
+
+// Test the voyager host message generator process_ack function
+TEST(test_dfu, voyager_host_message_generator_crc_valid) {
+    // Create a start request packet
+    uint8_t buffer[8] = {0};
+    voyager_host_message_generator_generate_start_request(buffer, 8, 0XADBEEF, 0xDEADBEEF);
+
+    // Generate the comparison ack packet
+    uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
+    // compute the CRC of the last 7 bytes of the buffer sent by the host
+    // and pass it as the payload to the generate ack message function
+    uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
+    uint8_t crc_buffer[4] = {0};
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc);
+    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
+    voyager_host_dfu_error_E error = voyager_host_compare_ack_message(ack_packet, sizeof(ack_packet), buffer, sizeof(buffer));
+
+    CHECK_EQUAL(VOYAGER_DFU_ERROR_NONE, error);
+}
+
+// Test an invalid CRC
+TEST(test_dfu, voyager_host_message_generator_crc_invalid) {
+    // Create a start request packet
+    uint8_t buffer[8] = {0};
+    voyager_host_message_generator_generate_start_request(buffer, 8, 0XADBEEF, 0xDEADBEEF);
+
+    // Generate the comparison ack packet
+    uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
+    // compute the CRC of the last 7 bytes of the buffer sent by the host
+    // and pass it as the payload to the generate ack message function
+    uint32_t crc = voyager_host_calculate_crc(&buffer[1], 7);
+    uint8_t crc_buffer[4] = {0};
+    voyager_private_pack_crc_into_buffer(crc_buffer, crc + 1);
+    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
+    voyager_host_dfu_error_E error = voyager_host_compare_ack_message(ack_packet, sizeof(ack_packet), buffer, sizeof(buffer));
+
+    CHECK_EQUAL(VOYAGER_HOST_DFU_ERROR_CRC_MISMATCH, error);
+}
+
+// Test a sequence error
+TEST(test_dfu, voyager_host_message_generator_sequence_error) {
+    // Create a start request packet
+    uint8_t buffer[8] = {0};
+    voyager_host_message_generator_generate_start_request(buffer, 8, 0XADBEEF, 0xDEADBEEF);
+
+    // Generate the comparison ack packet
+    uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
+    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_OUT_OF_SEQUENCE, NULL, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);
+
+    voyager_host_dfu_error_E error = voyager_host_compare_ack_message(ack_packet, sizeof(ack_packet), buffer, sizeof(buffer));
+
+    CHECK_EQUAL(VOYAGER_HOST_DFU_ERROR_OUT_OF_SEQUENCE, error);
+}

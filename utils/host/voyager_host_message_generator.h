@@ -1,3 +1,12 @@
+/**
+ * @file voyager_host_message_generator.h
+ * @brief Host message generation functions
+ *
+ * This file contains utility functions intended for use by a DFU host
+ *
+ * @author Sahil Kale
+ */
+
 #ifndef VOYAGER_HOST_MESSAGE_GENERATOR_H
 #define VOYAGER_HOST_MESSAGE_GENERATOR_H
 #include <stdbool.h>

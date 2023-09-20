@@ -1,3 +1,12 @@
+/**
+ * @file voyager_private.h
+ * @brief This file contains the private API for the voyager bootloader
+ *
+ * See LICENCE.md for the license information for this library
+ *
+ * @author Sahil Kale
+ */
+
 #ifndef VOYAGER_PRIVATE_H
 #define VOYAGER_PRIVATE_H
 #include <stdbool.h>

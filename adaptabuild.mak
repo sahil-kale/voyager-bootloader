@@ -51,8 +51,17 @@ $(MODULE)_SRCPATH += $(MODULE_PATH)/test/mocks
 $(MODULE)_INCPATH :=
 $(MODULE)_INCPATH += $(MODULE_PATH)/inc
 
+# ----------------------------------------------------------------------------
+# NOTE: The default config file must be created somehow - it is normally
+#       up to the developer to specify which defines are needed and how they
+#       are to be configured.
+#
+# By convention we place config files in product/$(PRODUCT)/config/$(MCU) because
+# that's an easy pace to leave things like HAL config, linker scripts etc
+
 $(MODULE)_INCPATH += product/$(PRODUCT)/config/$(MCU)
 
+# ----------------------------------------------------------------------------
 ifeq (unittest,$(MAKECMDGOALS))
   $(MODULE)_INCPATH += $(MODULE_PATH)/test/mocks
   $(MODULE)_INCPATH += $(MODULE_PATH)/utils/host
@@ -71,12 +80,6 @@ ifeq (unittest,$(MAKECMDGOALS))
   $(MODULE)_CDEFS += VOYAGER_UNIT_TEST
 endif
 
-# ifeq (host,$(MCU))
-#     # Do nothing - we want the standard library for host builds
-# else
-#     $(MODULE)_CFLAGS += -nostdinc
-# endif
-
 # ----------------------------------------------------------------------------
 # Include the adaptabuild library makefile - must be done for each module!
 
@@ -87,9 +90,9 @@ include $(ADAPTABUILD_PATH)/make/library.mak
 # if the target is unittest
 
 ifeq (unittest,$(MAKECMDGOALS))
-    TESTABLE_MODULES += $(MODULE)
-	$(MODULE)_test_main = $(MODULE)/test/main.o
-    include $(ADAPTABUILD_PATH)/make/test/cpputest.mak
+  TESTABLE_MODULES += $(MODULE)
+  $(MODULE)_test_main = $(MODULE)/test/main.o
+  include $(ADAPTABUILD_PATH)/make/test/cpputest.mak
 endif
 
 # ----------------------------------------------------------------------------

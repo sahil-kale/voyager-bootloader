@@ -50,6 +50,7 @@ $(MODULE)_SRCPATH += $(MODULE_PATH)/test/mocks
 
 $(MODULE)_INCPATH :=
 $(MODULE)_INCPATH += $(MODULE_PATH)/inc
+$(MODULE)_INCPATH += $(umm_libc_PATH)/include
 
 # ----------------------------------------------------------------------------
 # NOTE: The default config file must be created somehow - it is normally
@@ -74,10 +75,16 @@ $(MODULE)_CDEFS :=
 $(MODULE)_CDEFS +=
 
 $(MODULE)_CFLAGS :=
-$(MODULE)_CFLAGS += -Wno-builtin-declaration-mismatch -pthread
+$(MODULE)_CFLAGS += -Wno-builtin-declaration-mismatch
 
 ifeq (unittest,$(MAKECMDGOALS))
   $(MODULE)_CDEFS += VOYAGER_UNIT_TEST
+endif
+
+ifeq (host,$(MCU))
+    # Do nothing - we want the standard library for host builds
+else
+    $(MODULE)_CFLAGS += -nostdinc
 endif
 
 # ----------------------------------------------------------------------------

@@ -369,6 +369,7 @@ void voyager_private_calculate_crc_stream(const uint8_t byte, voyager_bootloader
 voyager_error_E voyager_bootloader_process_receieved_packet(uint8_t const *const data, size_t const length) {
     voyager_error_E ret = VOYAGER_ERROR_NONE;
     do {
+        // cppcheck-suppress knownConditionTrueFalse
         if ((length > VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE) || (data == NULL)) {
             ret = VOYAGER_ERROR_INVALID_ARGUMENT;
             break;
@@ -391,6 +392,7 @@ voyager_error_E voyager_private_generate_ack_message(const voyager_dfu_error_E e
                                                      uint8_t *const message_buffer, size_t const message_size) {
     voyager_error_E ret = VOYAGER_ERROR_NONE;
     do {
+        // cppcheck-suppress knownConditionTrueFalse
         if ((message_buffer == NULL) || (message_size < VOYAGER_DFU_ACK_MESSAGE_SIZE)) {
             ret = VOYAGER_ERROR_INVALID_ARGUMENT;
             break;
@@ -451,26 +453,35 @@ voyager_message_t voyager_private_unpack_message(uint8_t *const message_buffer, 
 
 voyager_error_E voyager_private_init_dfu(void) {
     voyager_error_E ret = VOYAGER_ERROR_NONE;
-    voyager_data.dfu_sequence_number = 0;
-    voyager_data.bytes_written = 0;
-    // get the start and end addresses from NVM
-    voyager_bootloader_nvm_data_t data;
-    ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
+    do {
+        voyager_data.dfu_sequence_number = 0;
+        voyager_data.bytes_written = 0;
+        // get the start and end addresses from NVM
+        voyager_bootloader_nvm_data_t data;
+        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_START_ADDRESS, &data);
 
-    voyager_bootloader_addr_size_t start_address = data.app_start_address;
+        if (ret != VOYAGER_ERROR_NONE) {
+            break;
+        }
 
-    ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_END_ADDRESS, &data);
+        voyager_bootloader_addr_size_t start_address = data.app_start_address;
 
-    if (ret == VOYAGER_ERROR_NONE) {
         ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_END_ADDRESS, &data);
-    }
 
-    voyager_bootloader_addr_size_t end_address = data.app_end_address;
+        if (ret != VOYAGER_ERROR_NONE) {
+            break;
+        }
 
-    // Erase the flash
-    if (ret == VOYAGER_ERROR_NONE) {
+        ret = voyager_bootloader_nvm_read(VOYAGER_NVM_KEY_APP_END_ADDRESS, &data);
+
+        // Erase the flash
+        if (ret != VOYAGER_ERROR_NONE) {
+            break;
+        }
+        voyager_bootloader_addr_size_t end_address = data.app_end_address;
+
         ret = voyager_bootloader_hal_erase_flash(start_address, end_address);
-    }
+    } while (false);
     return ret;
 }
 

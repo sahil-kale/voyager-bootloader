@@ -90,6 +90,9 @@ size_t voyager_host_message_generator_generate_data_packet(uint8_t *const buffer
                                                            size_t payload_len, bool reset_sequence_number) {
     size_t ret = 0;
     if ((buffer != NULL) && (len >= payload_len + 2U)) {
+        // clear the buffer
+        memset(buffer, 0, len);
+
         buffer[0] = VOYAGER_HOST_MESSAGE_ID_DATA;
         // first byte is the sequence number
         static uint8_t sequence_number = 0;
@@ -98,8 +101,9 @@ size_t voyager_host_message_generator_generate_data_packet(uint8_t *const buffer
         }
         buffer[1] = sequence_number;
         sequence_number = (sequence_number + 1) % 256;
-        // copy the payload
-        memcpy(&buffer[2], payload, payload_len);
+        if (payload != NULL) {
+            memcpy(&buffer[2], payload, payload_len);
+        }
         ret = payload_len + 2U;
     }
 

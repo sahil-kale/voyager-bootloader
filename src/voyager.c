@@ -14,6 +14,7 @@
 #include "voyager_private.h"
 
 static voyager_data_t voyager_data = {
+    .config = NULL,
     .state = VOYAGER_STATE_NOT_INITIALIZED,
     .error_latched = VOYAGER_ERROR_NONE,
 };
@@ -47,23 +48,29 @@ static const unsigned int crc32_table[] = {
     0x89b8fd09, 0x8d79e0be, 0x803ac667, 0x84fbdbd0, 0x9abc8bd5, 0x9e7d9662, 0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06,
     0xa6322bdf, 0xa2f33668, 0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4};
 
-voyager_error_E voyager_bootloader_init(void) {
-    voyager_data.state = VOYAGER_STATE_IDLE;
-    voyager_data.request = VOYAGER_REQUEST_KEEP_IDLE;
-    voyager_data.app_failed_crc_check = false;
-    memset(voyager_data.message_buffer, 0, sizeof(voyager_data.message_buffer));
-    voyager_data.packet_size = 0;
-    voyager_data.pending_data = false;
-    voyager_data.packet_overrun = false;
-    voyager_data.valid_start_request_received = false;
-    voyager_data.dfu_sequence_number = 0;
-    voyager_data.bytes_written = 0;
-    voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
-    voyager_data.app_size_cached = 0U;
-    // memset the ack message buffer to 0
-    memset(voyager_data.ack_message_buffer, 0, sizeof(voyager_data.ack_message_buffer));
-    voyager_data.error_latched = VOYAGER_ERROR_NONE;
-    return VOYAGER_ERROR_NONE;
+voyager_error_E voyager_bootloader_init(voyager_bootloader_config_t const *const config) {
+    voyager_error_E ret = VOYAGER_ERROR_NONE;
+    if (config != NULL) {
+        voyager_data.state = VOYAGER_STATE_IDLE;
+        voyager_data.request = VOYAGER_REQUEST_KEEP_IDLE;
+        voyager_data.app_failed_crc_check = false;
+        memset(voyager_data.message_buffer, 0, sizeof(voyager_data.message_buffer));
+        voyager_data.packet_size = 0;
+        voyager_data.pending_data = false;
+        voyager_data.packet_overrun = false;
+        voyager_data.valid_start_request_received = false;
+        voyager_data.dfu_sequence_number = 0;
+        voyager_data.bytes_written = 0;
+        voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
+        voyager_data.app_size_cached = 0U;
+        // memset the ack message buffer to 0
+        memset(voyager_data.ack_message_buffer, 0, sizeof(voyager_data.ack_message_buffer));
+        voyager_data.error_latched = VOYAGER_ERROR_NONE;
+        voyager_data.config = config;
+    } else {
+        ret = VOYAGER_ERROR_INVALID_ARGUMENT;
+    }
+    return ret;
 }
 
 voyager_bootloader_state_E voyager_bootloader_get_state(void) { return voyager_data.state; }
@@ -331,9 +338,11 @@ voyager_bootloader_state_E voyager_private_get_desired_state(void) {
             if (voyager_data.dfu_error != VOYAGER_DFU_ERROR_NONE) {
                 desired_state = VOYAGER_STATE_IDLE;
             } else if (voyager_data.bytes_written == voyager_data.app_size_cached) {
-                // Improvement: feature flag this state to move back to idle if user
-                // desires
-                desired_state = VOYAGER_STATE_JUMP_TO_APP;
+                if (voyager_data.config->jump_to_app_after_dfu_recv_complete) {
+                    desired_state = VOYAGER_STATE_JUMP_TO_APP;
+                } else {
+                    desired_state = VOYAGER_STATE_IDLE;
+                }
             } else {
                 // do nothing
             }

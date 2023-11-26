@@ -1,6 +1,7 @@
 #include <CppUTestExt/MockSupport.h>
 
 #include "CppUTest/TestHarness.h"
+#include "test_defaults.hpp"
 #include "voyager_host_message_generator.h"
 
 extern "C" {
@@ -10,10 +11,10 @@ extern "C" {
 #include "voyager_private.h"
 }
 
-// create a test group
-TEST_GROUP(test_dfu){
+extern const voyager_bootloader_config_t default_test_config;
 
-    void setup(){mock().clear();
+// create a test group
+TEST_GROUP(test_dfu){void setup(){mock().clear();
 mock_nvm_data_t *nvm_data = mock_nvm_get_data();
 
 uint8_t *mock_app_start_address = mock_dfu_get_flash();
@@ -27,6 +28,35 @@ void teardown() { mock().clear(); }
 }
 ;
 
+void run_one_byte_ota(void) {
+    uint8_t one_byte_app[1] = {0};
+
+    uint8_t packet_buffer[8] = {0};
+
+    // Send START
+    voyager_host_message_generator_generate_start_request(packet_buffer, sizeof(packet_buffer), sizeof(one_byte_app),
+                                                          voyager_host_calculate_crc(&one_byte_app, 1));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_process_receieved_packet(packet_buffer, sizeof(packet_buffer)));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_bootloader_get_state());
+
+    voyager_host_message_generator_generate_data_packet(packet_buffer, sizeof(packet_buffer), one_byte_app, sizeof(one_byte_app),
+                                                        true);
+
+    // OTA the one byte
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_process_receieved_packet(packet_buffer, 3));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    // Need to run again to get state change
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+}
+
 // Test the packet creating function
 
 // Test that a start request without enter dfu request is rejected and sends an
@@ -35,7 +65,7 @@ TEST(test_dfu, start_request_without_enter_dfu_request) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // Ensure that the bootloader is off after init
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -83,7 +113,7 @@ TEST(test_dfu, start_request_with_enter_dfu_request) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // get the mock nvm data and set the app size and crc to 0
     mock_nvm_data_t *nvm_data = mock_nvm_get_data();
     nvm_data->app_crc = 0;
@@ -160,7 +190,7 @@ TEST(test_dfu, start_request_with_enter_dfu_request) {
 // Test a packet null pointer
 TEST(test_dfu, start_request_null_pointer) {
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // Ensure that the bootloader is off after init
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -174,7 +204,7 @@ TEST(test_dfu, start_request_null_pointer) {
 // Test a packet over the size
 TEST(test_dfu, start_request_over_size) {
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // Ensure that the bootloader is off after init
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -194,7 +224,7 @@ TEST(test_dfu, start_request_over_size) {
 // without calling run)
 TEST(test_dfu, start_request_overrun) {
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // Ensure that the bootloader is off after init
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -246,7 +276,7 @@ TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // get the mock nvm data and set the app size and crc to 0
     mock_nvm_data_t *nvm_data = mock_nvm_get_data();
     nvm_data->app_crc = 0;
@@ -376,7 +406,7 @@ TEST(test_dfu, out_of_sequence_data_packet) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // get the mock nvm data and set the app size and crc to 0
     mock_nvm_data_t *nvm_data = mock_nvm_get_data();
     nvm_data->app_crc = 0;
@@ -513,7 +543,7 @@ TEST(test_dfu, start_packet_while_in_dfu_receive) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // get the mock nvm data and set the app size and crc to 0
     mock_nvm_data_t *nvm_data = mock_nvm_get_data();
     nvm_data->app_crc = 0;
@@ -670,7 +700,7 @@ TEST(test_dfu, packet_overrun_dfu_receive) {
     // Clear the mock
     mock().clear();
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // get the mock nvm data and set the app size and crc to 0
     mock_nvm_data_t *nvm_data = mock_nvm_get_data();
     nvm_data->app_crc = 0;
@@ -775,7 +805,7 @@ TEST(test_dfu, packet_overrun_dfu_receive) {
 // error
 TEST(test_dfu, data_but_not_started) {
     // Ensure that the init function does not return an error
-    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
     // Ensure that the bootloader is off after init
     CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -818,7 +848,7 @@ TEST(test_dfu, data_but_not_started) {
 // Test that a start request with size too big is rejected and sends an error
 TEST(test_dfu, size_too_big) {
   // Ensure that the init function does not return an error
-  CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init());
+  CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&default_test_config));
   // Ensure that the bootloader is off after init
   CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
 
@@ -939,4 +969,44 @@ TEST(test_dfu, voyager_host_message_generator_sequence_error) {
     voyager_host_dfu_error_E error = voyager_host_compare_ack_message(ack_packet, sizeof(ack_packet), buffer, sizeof(buffer));
 
     CHECK_EQUAL(VOYAGER_HOST_DFU_ERROR_OUT_OF_SEQUENCE, error);
+}
+
+// Test that jumping to the application does  happen if the feature flag to do so is true
+TEST(test_dfu, test_jump_to_app_feature_flag_enabled) {
+    static const voyager_bootloader_config_t jump_to_app_feature_disabled{
+        .jump_to_app_after_dfu_recv_complete = true,
+    };
+    mock().disable();
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&jump_to_app_feature_disabled));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_request(VOYAGER_REQUEST_ENTER_DFU));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    run_one_byte_ota();
+
+    CHECK_EQUAL(VOYAGER_STATE_JUMP_TO_APP, voyager_bootloader_get_state());
+
+    mock().enable();
+}
+
+// Test that jumping to the application does  happen if the feature flag to do so is true
+TEST(test_dfu, test_jump_to_app_feature_flag_disabled) {
+    static const voyager_bootloader_config_t jump_to_app_feature_disabled{
+        .jump_to_app_after_dfu_recv_complete = false,
+    };
+    mock().disable();
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_init(&jump_to_app_feature_disabled));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_request(VOYAGER_REQUEST_ENTER_DFU));
+
+    CHECK_EQUAL(VOYAGER_ERROR_NONE, voyager_bootloader_run());
+
+    run_one_byte_ota();
+
+    CHECK_EQUAL(VOYAGER_STATE_IDLE, voyager_bootloader_get_state());
+
+    mock().enable();
 }

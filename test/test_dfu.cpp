@@ -312,12 +312,12 @@ TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
     // check that the current state is DFU receive
     CHECK_EQUAL(VOYAGER_STATE_DFU_RECEIVE, voyager_bootloader_get_state());
 
-    // for half of the size, write using 2 byte packets, just for funsies
+    // for half of the size, write using 2 byte packets, then do the rest in 6
     size_t written_size = 0U;
     while (written_size != sizeof(fake_flash_data_1)) {
         size_t chunk_size = 2U;
         if (written_size > sizeof(fake_flash_data_1) / 2) {
-            chunk_size = 16U;  // write the rest in 16 byte chunks
+            chunk_size = 6U;
         }
 
         if (chunk_size > sizeof(fake_flash_data_1) - written_size) {

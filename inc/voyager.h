@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "voyager_cfg.h"  // Override with cfg_cfg_xxx.h
+
 typedef enum {
     VOYAGER_ERROR_NONE = 0,
     VOYAGER_ERROR_INVALID_ARGUMENT,

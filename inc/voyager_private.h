@@ -24,6 +24,7 @@
 #define VOYAGER_DFU_ACK_MESSAGE_SIZE 8U
 
 typedef struct {
+    voyager_bootloader_config_t const *config;
     voyager_bootloader_state_E state;
     voyager_bootloader_request_E request;
     voyager_error_E error_latched;

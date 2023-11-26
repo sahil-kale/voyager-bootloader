@@ -72,14 +72,20 @@ typedef union {
     voyager_bootloader_app_size_t app_size;
 } voyager_bootloader_nvm_data_t;
 
+typedef struct {
+    bool jump_to_app_after_dfu_recv_complete;  // Controls whether the system jumps to application or to IDLE after completion of
+                                               // DFU
+} voyager_bootloader_config_t;
+
 /** Primary Bootloader Functions **/
 /**
  * @brief voyager_bootloader_init Resets and initializes the bootloader.
+ * @param config pointer to configuration struct that stores various feature flags and call-outs
  * @return VOYAGER_ERROR_NONE if successful, otherwise an error code
  *
  * @note should be called on startup before any other bootloader functions
  */
-voyager_error_E voyager_bootloader_init(void);
+voyager_error_E voyager_bootloader_init(voyager_bootloader_config_t const *const config);
 
 /**
  * @brief voyager_bootloader_run Runs the bootloader

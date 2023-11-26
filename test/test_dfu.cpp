@@ -333,11 +333,9 @@ TEST(test_dfu, full_dfu_transfer_and_jump_to_application) {
 
         // Generate the comparison ack packet, which will generate a CRC of all the
         // bytes in the buffer except the first byte (the message ID)
-        uint8_t ack_packet[VOYAGER_DFU_ACK_MESSAGE_SIZE] = {0};
         // compute the CRC of the last 7 bytes of the buffer sent by the host
         // and pass it as the payload to the generate ack message function
-        uint32_t crc = voyager_host_calculate_crc(&buffer[1], chunk_size + 1U);
-        uint8_t crc_buffer[4] = {0};
+        crc = voyager_host_calculate_crc(&buffer[1], chunk_size + 1U);
         voyager_private_pack_crc_into_buffer(crc_buffer, crc);
 
         voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_NONE, crc_buffer, ack_packet, VOYAGER_DFU_ACK_MESSAGE_SIZE);

@@ -183,58 +183,7 @@ voyager_error_E voyager_private_run_state(const voyager_bootloader_state_E state
     do {
         switch (state) {
             case VOYAGER_STATE_IDLE: {
-                // Clear the DFU error if we are in idle
-                voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
-
-                // If we receive a start packet, we check if the request is ENTER_DFU.
-                // Otherwise, issue an error
-                if (voyager_data.pending_data) {
-                    if (voyager_data.packet_overrun) {
-                        // generate an ack with an error
-                        ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN, NULL,
-                                                                   voyager_data.ack_message_buffer,
-                                                                   sizeof(voyager_data.ack_message_buffer));
-
-                        voyager_data.packet_overrun = false;
-                    } else {
-                        // Unpack the message
-                        voyager_message_t message =
-                            voyager_private_unpack_message(voyager_data.message_buffer, voyager_data.packet_size);
-
-                        // If the message is a start packet, we check if the request is set
-                        // to ENTER_DFU
-                        if (message.header.message_id == VOYAGER_MESSAGE_ID_START) {
-                            if (voyager_data.request == VOYAGER_REQUEST_ENTER_DFU) {
-                                ret = voyager_private_process_start_packet(&message);
-
-                                if (ret == VOYAGER_ERROR_NONE) {
-                                    voyager_data.valid_start_request_received = true;
-                                }
-                            } else {
-                                // Issue an ack with an error
-                                ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_ENTER_DFU_NOT_REQUESTED, NULL,
-                                                                           voyager_data.ack_message_buffer,
-                                                                           sizeof(voyager_data.ack_message_buffer));
-                            }
-                        } else if (message.header.message_id == VOYAGER_MESSAGE_ID_DATA) {
-                            // Issue an ack with an error
-                            ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_OUT_OF_SEQUENCE, NULL,
-                                                                       voyager_data.ack_message_buffer,
-                                                                       sizeof(voyager_data.ack_message_buffer));
-                        } else {
-                            // Issue an ack with an error
-                            ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID, NULL,
-                                                                       voyager_data.ack_message_buffer,
-                                                                       sizeof(voyager_data.ack_message_buffer));
-                        }
-                    }
-                    // Send the ACK
-                    if (ret == VOYAGER_ERROR_NONE) {
-                        ret = voyager_bootloader_send_to_host(voyager_data.ack_message_buffer,
-                                                              sizeof(voyager_data.ack_message_buffer));
-                    }
-                    voyager_data.pending_data = false;
-                }
+                ret = voyager_private_run_idle_state();
             } break;
             case VOYAGER_STATE_JUMP_TO_APP: {
                 bool flash_verified = false;
@@ -260,43 +209,7 @@ voyager_error_E voyager_private_run_state(const voyager_bootloader_state_E state
             } break;
 
             case VOYAGER_STATE_DFU_RECEIVE: {
-                if (voyager_data.pending_data) {
-                    if (voyager_data.packet_overrun == false) {
-                        // Unpack the message
-                        voyager_message_t message =
-                            voyager_private_unpack_message(voyager_data.message_buffer, voyager_data.packet_size);
-
-                        if (message.header.message_id == VOYAGER_MESSAGE_ID_DATA) {
-                            ret = voyager_private_process_data_packet(&message);
-                        } else if (message.header.message_id == VOYAGER_MESSAGE_ID_START) {
-                            ret = voyager_private_process_start_packet(&message);
-                            if (ret != VOYAGER_ERROR_NONE) {
-                                break;
-                            }
-                            ret = voyager_private_init_dfu();
-                        } else {
-                            // Issue an ack with an error
-                            ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID, NULL,
-                                                                       voyager_data.ack_message_buffer,
-                                                                       sizeof(voyager_data.ack_message_buffer));
-
-                            voyager_data.dfu_error = VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID;
-                        }
-                    } else {
-                        ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN, NULL,
-                                                                   voyager_data.ack_message_buffer,
-                                                                   sizeof(voyager_data.ack_message_buffer));
-                        voyager_data.dfu_error = VOYAGER_DFU_ERROR_PACKET_OVERRUN;
-                    }
-
-                    // Send the ACK
-                    if (ret == VOYAGER_ERROR_NONE) {
-                        ret = voyager_bootloader_send_to_host(voyager_data.ack_message_buffer,
-                                                              sizeof(voyager_data.ack_message_buffer));
-                    }
-
-                    voyager_data.pending_data = false;
-                }
+                ret = voyager_private_run_dfu_receive_state();
             } break;
 
             case VOYAGER_STATE_NOT_INITIALIZED:
@@ -306,6 +219,104 @@ voyager_error_E voyager_private_run_state(const voyager_bootloader_state_E state
         }
     } while (false);
 
+    return ret;
+}
+
+voyager_error_E voyager_private_run_idle_state(void) {
+    voyager_error_E ret = VOYAGER_ERROR_NONE;
+    // Clear the DFU error if we are in idle
+    voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
+
+    // If we receive a start packet, we check if the request is ENTER_DFU.
+    // Otherwise, issue an error
+    if (voyager_data.pending_data) {
+        if (voyager_data.packet_overrun) {
+            // generate an ack with an error
+            ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN, NULL, voyager_data.ack_message_buffer,
+                                                       sizeof(voyager_data.ack_message_buffer));
+
+            voyager_data.packet_overrun = false;
+        } else {
+            // Unpack the message
+            voyager_message_t message = voyager_private_unpack_message(voyager_data.message_buffer, voyager_data.packet_size);
+
+            // If the message is a start packet, we check if the request is set
+            // to ENTER_DFU
+            if (message.header.message_id == VOYAGER_MESSAGE_ID_START) {
+                if (voyager_data.request == VOYAGER_REQUEST_ENTER_DFU) {
+                    ret = voyager_private_process_start_packet(&message);
+
+                    if (ret == VOYAGER_ERROR_NONE) {
+                        voyager_data.valid_start_request_received = true;
+                    }
+                } else {
+                    // Issue an ack with an error
+                    ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_ENTER_DFU_NOT_REQUESTED, NULL,
+                                                               voyager_data.ack_message_buffer,
+                                                               sizeof(voyager_data.ack_message_buffer));
+                }
+            } else if (message.header.message_id == VOYAGER_MESSAGE_ID_DATA) {
+                // Issue an ack with an error
+                ret =
+                    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_OUT_OF_SEQUENCE, NULL, voyager_data.ack_message_buffer,
+                                                         sizeof(voyager_data.ack_message_buffer));
+            } else {
+                // Issue an ack with an error
+                ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID, NULL,
+                                                           voyager_data.ack_message_buffer,
+                                                           sizeof(voyager_data.ack_message_buffer));
+            }
+        }
+        // Send the ACK
+        if (ret == VOYAGER_ERROR_NONE) {
+            ret = voyager_bootloader_send_to_host(voyager_data.ack_message_buffer, sizeof(voyager_data.ack_message_buffer));
+        }
+        voyager_data.pending_data = false;
+    }
+
+    return ret;
+}
+
+voyager_error_E voyager_private_run_dfu_receive_state(void) {
+    voyager_error_E ret = VOYAGER_ERROR_NONE;
+    do {
+        if (voyager_data.pending_data) {
+            if (voyager_data.packet_overrun == false) {
+                // Unpack the message
+                voyager_message_t message = voyager_private_unpack_message(voyager_data.message_buffer, voyager_data.packet_size);
+
+                if (message.header.message_id == VOYAGER_MESSAGE_ID_DATA) {
+                    ret = voyager_private_process_data_packet(&message);
+                } else if (message.header.message_id == VOYAGER_MESSAGE_ID_START) {
+                    ret = voyager_private_process_start_packet(&message);
+                    if (ret != VOYAGER_ERROR_NONE) {
+                        break;
+                    }
+                    ret = voyager_private_init_dfu();
+                } else {
+                    // Issue an ack with an error
+                    ret = voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID, NULL,
+                                                               voyager_data.ack_message_buffer,
+                                                               sizeof(voyager_data.ack_message_buffer));
+
+                    voyager_data.dfu_error = VOYAGER_DFU_ERROR_INVALID_MESSAGE_ID;
+                }
+            } else {
+                // Pending data and packet overrun flag
+                ret =
+                    voyager_private_generate_ack_message(VOYAGER_DFU_ERROR_PACKET_OVERRUN, NULL, voyager_data.ack_message_buffer,
+                                                         sizeof(voyager_data.ack_message_buffer));
+                voyager_data.dfu_error = VOYAGER_DFU_ERROR_PACKET_OVERRUN;
+            }
+
+            // Send the ACK
+            if (ret == VOYAGER_ERROR_NONE) {
+                ret = voyager_bootloader_send_to_host(voyager_data.ack_message_buffer, sizeof(voyager_data.ack_message_buffer));
+            }
+
+            voyager_data.pending_data = false;
+        }
+    } while (false);
     return ret;
 }
 

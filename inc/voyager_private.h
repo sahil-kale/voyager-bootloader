@@ -181,6 +181,18 @@ voyager_error_E voyager_private_verify_flash(bool *const result);
  */
 void voyager_private_pack_crc_into_buffer(uint8_t buffer[4], const voyager_bootloader_app_crc_t crc);
 
+/**
+ * @brief voyager_private_run_idle_state Runs the idle state and associated action
+ * @return voyager_error_E error code of the run action
+ */
+voyager_error_E voyager_private_run_idle_state(void);
+
+/**
+ * @brief voyager_private_run_dfu_receive_state Runs the DFU receive state and associated action
+ * @return voyager_error_E error code of the run action
+ */
+voyager_error_E voyager_private_run_dfu_receive_state(void);
+
 #ifdef VOYAGER_UNIT_TEST
 /**
  * @brief voyager_private_get_data Gets a pointer of the voyager data struct

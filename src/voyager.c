@@ -658,7 +658,11 @@ voyager_bootloader_app_crc_t voyager_private_calculate_crc(const void *buffer, c
 }
 
 void voyager_private_calculate_crc_stream(const uint8_t byte, voyager_bootloader_app_crc_t *const crc) {
-    *crc = (*crc << 8) ^ crc32_table[(((*crc) >> 24) ^ byte) & 255];
+    if (voyager_data.config->custom_crc_stream != NULL) {
+        voyager_data.config->custom_crc_stream(byte, crc);
+    } else {
+        *crc = (*crc << 8) ^ crc32_table[(((*crc) >> 24) ^ byte) & 255];
+    }
 }
 
 #ifdef VOYAGER_UNIT_TEST

@@ -72,9 +72,18 @@ typedef union {
     voyager_bootloader_app_size_t app_size;
 } voyager_bootloader_nvm_data_t;
 
+/**
+ * @brief voyager_custom_crc_stream_F Function pointer signature for a custom CRC stream function
+ * @param byte The byte to process
+ * @param crc pointer to the current CRC value that is expected to be modified
+ */
+typedef void (*voyager_custom_crc_stream_F)(const uint8_t byte, voyager_bootloader_app_crc_t *const crc);
+
 typedef struct {
     bool jump_to_app_after_dfu_recv_complete;  // Controls whether the system jumps to application or to IDLE after completion of
                                                // DFU
+    voyager_custom_crc_stream_F
+        custom_crc_stream;  // Custom function pointer signature to allow an override of the base CRC method
 } voyager_bootloader_config_t;
 
 /** Primary Bootloader Functions **/

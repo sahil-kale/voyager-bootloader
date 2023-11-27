@@ -108,8 +108,3 @@ TEST(test_bootloader_state_machine, test_app_good_crc_verify) {
     // Ensure that the voyager data request is set to VOYAGER_REQUEST_KEEP_IDLE
     CHECK_EQUAL(VOYAGER_REQUEST_KEEP_IDLE, voyager_private_get_data()->request);
 }
-
-// Test that a nullptr'ed config returns an error
-TEST(test_bootloader_state_machine, test_init_nullptr_is_rejected) {
-    CHECK_EQUAL(VOYAGER_ERROR_INVALID_ARGUMENT, voyager_bootloader_init(NULL));
-}

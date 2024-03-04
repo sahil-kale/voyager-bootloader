@@ -1,0 +1,17 @@
+name: Generate Documentation
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+   generate-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt install doxygen python3
+      - run: python3 scripts/generate_documentation.py 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: html-output
+          path: html/

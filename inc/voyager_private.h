@@ -21,32 +21,49 @@
 #endif  // VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE < 8
 #endif  // VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE
 
+/// @brief The size of the ACK message
 #define VOYAGER_DFU_ACK_MESSAGE_SIZE 8U
 
+/// @brief Module data of the voyager bootloader
 typedef struct {
+    /// @brief Pointer to the bootloader configuration struct
     voyager_bootloader_config_t const *config;
+    /// @brief Stores the current state of the bootloader
     voyager_bootloader_state_E state;
+    /// @brief Stores the desired request of the bootloader
     voyager_bootloader_request_E request;
+    /// @brief Stores the last thrown error code by the bootloader
     voyager_error_E error_latched;
+    /// @brief Stores whether the application has failed the CRC check
     bool app_failed_crc_check;
-    bool valid_start_request_received;
+    /// @brief Stores whether the bootloader received a valid DFU start request
+    bool valid_dfu_start_request_received;
 
+    /// @brief Stores the last received message in a private buffer
     uint8_t message_buffer[VOYAGER_BOOTLOADER_MAX_RECEIVE_PACKET_SIZE];
+    /// @brief Stores the size of the last received message
     uint32_t packet_size;
-    bool pending_data;  // note: this flag acts as a de-facto mutex
+    /// @brief Stores whether there is pending data to be processed
+    bool pending_data;
+    /// @brief Stores whether the bootloader saw a packet overrun
     bool packet_overrun;
 
-    size_t app_size_cached;  // Used to prevent the app size from being read from
-                             // NVM multiple times
+    /// @brief Stores the size of the application in a RAM cache to prevent multiple reads from NVM
+    size_t app_size_cached;
 
+    /// @brief Stores the last thrown error code by the bootloader's DFU subsystem
     voyager_dfu_error_E dfu_error;
 
+    /// @brief Buffer for ack messages
     uint8_t ack_message_buffer[VOYAGER_DFU_ACK_MESSAGE_SIZE];
 
+    /// @brief Stores the current sequence number of the DFU data packets
     uint8_t dfu_sequence_number;
+    /// @brief Tracks the number of bytes written to flash in DFU mode
     voyager_bootloader_app_size_t bytes_written;
 } voyager_data_t;
 
+/*! \cond PRIVATE */
 typedef struct {
     uint8_t message_id;
 } voyager_message_header_t;
@@ -65,21 +82,24 @@ typedef struct {
         } data_packet_data;
     } message_payload;
 } voyager_message_t;
+/*! \endcond */
 
+/// @brief The message IDs for the voyager bootloader
 typedef enum {
+    /// @brief The message ID is unknown
     VOYAGER_MESSAGE_ID_UNKNOWN = 0,
+    /// @brief DFU Start message ID
     VOYAGER_MESSAGE_ID_START,
+    /// @brief DFU acknowledgement message ID
     VOYAGER_MESSAGE_ID_ACK,
+    /// @brief DFU Data message ID
     VOYAGER_MESSAGE_ID_DATA,
 } voyager_message_id_E;
 
 /**
  * @brief voyager_private_calculate_crc Calculates the CRC of the application
- * @param app_start_address The start address of the application
+ * @param buffer The buffer containing the packet to calculate the CRC of
  * @param app_size The size of the application
- * @param is_flash_address Whether or not the start address is a flash address
- * @note If is_flash_address is true, the buffer will redirect calls to voyager_bootloader_hal_read_flash instead of manually
- * reading from the buffer
  * @return The CRC of the application as a uint32_t
  */
 voyager_bootloader_app_crc_t voyager_private_calculate_crc(const void *buffer, const size_t app_size);

@@ -29,7 +29,7 @@ voyager_error_E voyager_bootloader_init(voyager_bootloader_config_t const *const
         voyager_data.packet_size = 0;
         voyager_data.pending_data = false;
         voyager_data.packet_overrun = false;
-        voyager_data.valid_start_request_received = false;
+        voyager_data.valid_dfu_start_request_received = false;
         voyager_data.dfu_sequence_number = 0;
         voyager_data.bytes_written = 0;
         voyager_data.dfu_error = VOYAGER_DFU_ERROR_NONE;
@@ -105,7 +105,7 @@ voyager_error_E voyager_private_exit_state(const voyager_bootloader_state_E curr
                 // Clear the jump to app request
                 voyager_data.request = VOYAGER_REQUEST_KEEP_IDLE;
             }
-            voyager_data.valid_start_request_received = false;
+            voyager_data.valid_dfu_start_request_received = false;
         } break;
 
         case VOYAGER_STATE_DFU_RECEIVE: {
@@ -218,7 +218,7 @@ voyager_error_E voyager_private_run_idle_state(void) {
                     ret = voyager_private_process_start_packet(&message);
 
                     if (ret == VOYAGER_ERROR_NONE) {
-                        voyager_data.valid_start_request_received = true;
+                        voyager_data.valid_dfu_start_request_received = true;
                     }
                 } else {
                     // Issue an ack with an error
@@ -301,7 +301,7 @@ voyager_bootloader_state_E voyager_private_get_desired_state(void) {
                 } break;
                 // Keep idle if we are trying to enter DFU
                 case VOYAGER_REQUEST_ENTER_DFU: {
-                    if (voyager_data.valid_start_request_received) {
+                    if (voyager_data.valid_dfu_start_request_received) {
                         desired_state = VOYAGER_STATE_DFU_RECEIVE;
                     }
                 } break;

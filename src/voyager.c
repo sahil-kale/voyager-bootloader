@@ -351,9 +351,9 @@ voyager_error_E voyager_bootloader_process_receieved_packet(uint8_t const *const
         if (voyager_data.pending_data) {
             voyager_data.packet_overrun = true;
         } else {
-            voyager_data.pending_data = true;
             voyager_data.packet_size = length;
             memcpy(voyager_data.message_buffer, data, length);
+            voyager_data.pending_data = true;
         }
 
     } while (false);
